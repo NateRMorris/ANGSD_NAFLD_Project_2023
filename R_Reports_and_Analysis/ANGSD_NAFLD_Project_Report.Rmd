@@ -1,0 +1,619 @@
+---
+title: "ANGSD_NAFLD_Project"
+output: html_document
+date: "2023-03-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Getting the FASTQ Files!
+
+I made a new project folder called /home/nam4021/project/project_org
+
+I got a list of FASTQ files from the SRA Accession website and made the below csv, called sample_sras.csv.
+I wanted to select samples from similar patients. Older woman were most abundant in the study and therefore I decided to take samples from woman over 58 years old. In this study, I decided to include two conditions: HIGH NAFLD (NAFLD levels of 5 or 6) and LOW NAFLD (NAFLD levels mostly of 0 and 1 sample with 1). 
+```
+SRR9036307_1,
+SRR9036307_2,
+SRR9036311_1,
+SRR9036311_2,
+SRR9036380_1,
+SRR9036380_2,
+SRR9036314_1,
+SRR9036314_2,
+SRR9036377_1,
+SRR9036377_2,
+SRR9036379_1,
+SRR9036379_2,
+SRR9036384_1,
+SRR9036384_2,
+SRR9036357_1,
+SRR9036357_2,
+```
+I've also supplied an NAFLD_Sample_Notes sheet, which gives the fibrosis stage and NAFLD scores for each patient's samples.
+Here is more detailed information on each sample: https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA542148&o=acc_s%3Aa
+
+I made the below bash script called Download_fastqs.sh
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="wget_fastq_files"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=16G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+# Define the path to the CSV file
+csv_file="sample_sras.csv"
+
+# Loop through each line in the CSV file
+for line in $(cat "$csv_file"); do
+    string="${line::-2}"
+    trimmed="${line::-4}"
+    #echo $string
+    #echo $trimmed
+  # Use wget to download the URL specified in the current line
+  wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR903/007/$trimmed/$string.fastq.gz
+
+done
+
+echo 'Finished'
+```
+Therefore, I executed the above.
+
+2. Rename FastQs
+
+Next, I wanted to rename the fastqs and run fastQC on them. Therefore, I made a secondary csv file with the new names, called new_names.csv. Below are the contents.
+```
+HIGH_NAFLD1_1,
+HIGH_NAFLD1_2,
+HIGH_NAFLD2_1,
+HIGH_NAFLD2_2,
+HIGH_NAFLD3_1,
+HIGH_NAFLD3_2,
+HIGH_NAFLD4_1,
+HIGH_NAFLD4_2,
+LOW_NAFLD1_1,
+LOW_NAFLD1_2,
+LOW_NAFLD2_1,
+LOW_NAFLD2_2,
+LOW_NAFLD3_1,
+LOW_NAFLD3_2,
+LOW_NAFLD4_1,
+LOW_NAFLD4_2,
+```
+Then, I decided to make a script in order to rename the old fastq files to the new names. This is called rename_fastq.sh:
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="rename_fastq"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=4G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+# Define the path to the CSV file
+csv_file="sample_sras.csv"
+csv_new_name="new_names.csv"
+
+line_count=$(wc -l < $csv_file)
+name_count=$(wc -l < $csv_new_name)
+
+# Loop through each line in the CSV file
+if [[ "$line_count" == "$name_count" ]]; then
+    for line_num in `seq 1 $line_count`;
+    do
+        old_name=$(awk -F ',' "NR==$line_num" $csv_file) #SRR9036357_2
+        new_name=$(awk -F ',' "NR==$line_num" $csv_new_name)
+        old_name_trim=${old_name%??}
+        new_name_trim=${new_name%?}
+        #echo $old_name_trim
+        #echo $new_name_trim
+        # Use mv to rename the fastqfiles to our sample names
+        mv /home/nam4021/project/project_org/fastqfiles/$old_name_trim.fastq.gz /home/nam4021/project/project_org/fastqfiles/$new_name_trim.fastq.gz
+        #echo old: /home/nam4021/project/project_org/fastqfiles/$old_name_trim.fastq.gz
+        #echo new: /home/nam4021/project/project_org/fastqfiles/$new_name_trim.fastq.gz
+        #mv /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_2,.fastq.gz /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_2.fastq.gz
+    done
+else
+    echo "CSV of Fastq files and new names are not the same length"
+fi
+
+## ONE ISSUE IS THE LAST NEW FILE NAME HAS A COMMA AT THE END, NEED TO MANUALLY CHANGE
+mv /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_2,.fastq.gz /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_2.fastq.gz
+
+echo 'Finished'
+```
+
+3. FastQC - Sequence Quality Control
+
+I also made a different script called fastqc_NAFLD.sh. These I manually input for each file, however, I could've used a for loop or while loop instead.
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="fastqc"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=8G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+mamba activate angsd
+
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD1_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD1_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD2_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD2_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD3_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD3_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD4_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/HIGH_NAFLD4_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD1_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD1_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD2_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD2_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD3_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD3_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_1.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+fastqc /home/nam4021/project/project_org/fastqfiles/LOW_NAFLD4_2.fastq.gz --extract --outdir /athena/angsd/scratch/nam4021/fastqc_NAFLD
+```
+
+4. STAR Indexing and Alignment
+
+For this, I decided to build a new index for the GRCh38.p14 human genome. 
+
+I found the necessary Genome sequence (FASTA) and annotation features (GFF) at the below websites:
+https://www.ncbi.nlm.nih.gov/data-hub/genome/GCF_000001405.40/
+https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/latest_assembly_versions/GCF_000001405.40_GRCh38.p14/
+
+I've taken these sequences from GenBank. I've used the .fna for the genome sequence and .gff for the annotation features, as this is what GenBank provided. Then I did some research to make sure they are equivalent to our standard genome sequence and annotation features.
+
+Using the annotation and the sequence, I constructed and ran the below script. Unfortunately, I kept receiving the "Exceeded step memory limit at some point" error. Therefore, I had to use 64G and for the indexing to work.
+
+I chose the following parameters based on --runThreadN 6 and --sjdbOverhang 99. This is so it will run in 6 different threads in parallel, and I've used the 99 overhang because it is the default value. The individual reads are 51 bp, therefore 99 overhand is fine, even though the database will be a bit larger than necessary. I've kept the number of nodes and tasks as the default (=1). This file is called Create_hg38_index.sh.
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="genome_index"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=64G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+mamba activate angsd
+
+echo 'Starting STAR indexing now'
+
+STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /athena/angsd/scratch/nam4021/hg38_Index --genomeFastaFiles /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40/GCF_000001405.40_GRCh38.p14_genomic.fna --sjdbGTFfile /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40/genomic.gff --sjdbOverhang 99
+
+echo 'Finished'
+```
+
+Next, I decided to align these using the align_all_paired.sh file. I've used 2 nodes and 4 tasks in order to run the alignment in parallel. As described in the script below, LOW_NAFLD4 seemed to have different parsing than the others from the new_names.csv. I believe this is because I originally had additional samples, and then deleted them. Therefore, the comma (,) is still present after the final sample (LOW_NAFLD4). The runthread is set to 8, so it will run in parallel different threads. I've also used the gunzip readFilesCommand in order to use the fastq.gz files.
+
+I realized after running this alignment, I could've used the genome.ucsc website in order to assess the Intron Minimum and input this factor. I also could've changed the outTmpDir, to use the scratch folder as the temporary directory that STAR uses to sort. If I re-run the samples, I'll be sure to include these parameters. I've included these as commented out sections in order to remember to include them, however they are not set to the optimal values for now.
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=2
+#SBATCH --ntasks=4
+#SBATCH --job-name="align_fasta"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=36G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+echo 'Starting STAR alignment now'
+
+# Define the path to the CSV file
+csv_file="sample_sras.csv"
+csv_new_name="new_names.csv"
+### --readFilesIn LOW_NAFLD3_1.fastq.gz LOW_NAFLD3_2.fastq.gz OTHERS LOOK FINE
+## --readFilesIn LOW_NAFLD4__1.fastq.gz LOW_NAFLD4__2.fastq.gz SOMEHOW NAFLD4 is doing this
+
+# Loop through each line in the CSV file
+#for line in $(cat "$csv_file"); do
+
+for 
+awk 'NR % 2 == 0' "$csv_new_name" | while read line
+do
+    string="${line::-2}"
+    trimmed="${line::-3}"
+    forfour="${line::-4}"
+    forfour1="${forfour}_1"
+    forfour2="${forfour}_2"
+    lastdig="${trimmed:${#trimmed}-1}"
+    trimmed_1="${trimmed}_1"
+    trimmed_2="${trimmed}_2"
+    echo $string
+    echo $trimmed
+    echo $trimmed_1
+    echo $trimmed_2
+
+    #/home/nam4021/project/project_org/fastqfiles/$new_name_trim.fastq.gz
+    if [ $string =  'LOW_NAFLD4_2' ]; then
+    echo "Check for Low 4"
+    #echo "$forfor"
+    #echo "--readFilesIn $forfour1.fastq.gz $forfour2.fastq.gz"
+    #echo "--outFileNamePrefix /home/nam4021/project/project_org/star_NAFLD/$trimmed " \ 
+
+      # Use wget to download the URL specified in the current line
+    STAR --runMode alignReads \
+     --runThreadN 8 \
+     --genomeDir /athena/angsd/scratch/nam4021/hg38_Index  \
+     --readFilesCommand gunzip -c \
+     --readFilesIn /home/nam4021/project/project_org/fastqfiles/$forfour1.fastq.gz /home/nam4021/project/project_org/fastqfiles/$forfour2.fastq.gz \
+     --outFileNamePrefix /athena/angsd/scratch/nam4021/star_NAFLD/$forfour \
+     --outSAMtype BAM SortedByCoordinate
+    
+else
+    #echo  "--readFilesIn $trimmed_1.fastq.gz $trimmed_2.fastq.gz"
+    #echo  " --outFileNamePrefix /home/nam4021/project/project_org/star_NAFLD/$string " \
+      # Use wget to download the URL specified in the current line
+    STAR --runMode alignReads \
+     --runThreadN 8 \
+     --genomeDir /athena/angsd/scratch/nam4021/hg38_Index  \
+     --readFilesCommand gunzip -c \
+     --readFilesIn /home/nam4021/project/project_org/fastqfiles/$trimmed_1.fastq.gz /home/nam4021/project/project_org/fastqfiles/$trimmed_2.fastq.gz \
+     --outFileNamePrefix /athena/angsd/scratch/nam4021/star_NAFLD/$trimmed \
+     --outSAMtype BAM SortedByCoordinate
+     #--alignIntronMin 31  --alignIntronMax 3000 https://genome.ucsc.edu/cgi-bin/hgTablesLinks to an external site.
+     # -- outTmpDir /localScratch
+fi
+
+done
+
+
+echo 'Finished'
+```
+
+5. Samtools BAM File Indexing 
+
+After this, I used the sam_index.sh script in order to index all the bam files. This doesn't take much processing power, so I've only used 1 node, task and 4G. There really isn't any other customization/parameters needed to be changed here.
+```
+#!/bin/bash
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="sam_index"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=4G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+mamba activate angsd
+
+# Define the directory containing the BAM files
+bam_dir="/athena/angsd/scratch/nam4021/star_NAFLD"
+
+# Loop through each BAM file in the directory and index it
+for bam_file in "${bam_dir}"/*.bam
+do
+  samtools index "${bam_file}"
+done
+
+
+# In order words, accomplishes this
+#samtools index HIGH_NAFLD1Aligned.sortedByCoord.out.bam
+#samtools index HIGH_NAFLD2Aligned.sortedByCoord.out.bam
+#samtools index HIGH_NAFLD3Aligned.sortedByCoord.out.bam
+#samtools index HIGH_NAFLD4Aligned.sortedByCoord.out.bam
+#samtools index LOW_NAFLD1Aligned.sortedByCoord.out.bam
+#samtools index LOW_NAFLD2Aligned.sortedByCoord.out.bam
+#samtools index LOW_NAFLD3Aligned.sortedByCoord.out.bam
+#samtools index LOW_NAFLD4Aligned.sortedByCoord.out.bam
+```
+
+6. Alignment QC - BamQC, RSeQC 
+
+Next, I decided to run the QC_and_reads2.sh file. This file runs BamQC, and RSeQC and outputs the files in particular places.
+
+Unfortunately, I ran into some issues where the BamQC files didn't output where -o is directed, and the geneBody_coverage took a very long time to load. I am currently still running this script. After handing in this assignment, and for the final project, I intend to use the house-keeping genes file that Merv previously posted - hg38.HouseKeepingGenes.bed (from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/hg38.HouseKeepingGenes.bed.gz/download). This should drastically reduce the time it takes to run the script in the future. I'll be sure to run this and include it for my final report.
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
+#SBATCH --job-name="qc_reads"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=24G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+mamba activate rseqc
+
+csv_new_name="new_names.csv"
+
+echo "Starting QC and Reads"
+
+awk 'NR % 2 == 0' "$csv_new_name" | while read line
+do
+    string="${line::-2}"
+    trimmed="${line::-3}"
+    forfour="${line::-4}"
+    forfour1="${forfour}_1"
+    forfour2="${forfour}_2"
+    lastdig="${trimmed:${#trimmed}-1}"
+    trimmed_1="${trimmed}_1"
+    trimmed_2="${trimmed}_2"
+
+    #/home/nam4021/project/project_org/fastqfiles/$new_name_trim.fastq.gz
+    if [ $string =  'LOW_NAFLD4_2' ]; then
+    echo "Check for Low 4"
+    echo "$forfour"
+
+        if [ -e "/athena/angsd/scratch/nam4021/reads/LOW_NAFLD4_body_coverage.out" ]; then
+            echo "$forfour exists"
+
+        else
+            echo "$forfour does not exist"
+
+            # Issue - not sure why my BAMQC outputs to the /athena/angsd/scratch/nam4021/star_NAFLD/ directory and not the specified QCout
+            /softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
+        
+            read_distribution.py -i /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam -r /home/nam4021/project/genomic2.bed > /athena/angsd/scratch/nam4021/reads/LOW_NAFLD4_read_distribution.out
+
+            geneBody_coverage.py -r /home/nam4021/project/genomic2.bed -i /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam -o /athena/angsd/scratch/nam4021/reads/LOW_NAFLD4_body_coverage.out
+        fi
+else
+    echo "$trimmed"
+
+    if [ -e "/athena/angsd/scratch/nam4021/reads/"$trimmed"_read_distribution.out" ]; then
+        echo "$trimmed exists"
+
+    else
+        echo "$trimmed does not exist"
+
+
+        /softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam
+
+        read_distribution.py -i /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam -r /home/nam4021/project/genomic2.bed > /athena/angsd/scratch/nam4021/reads/"$trimmed"_read_distribution.out
+
+        geneBody_coverage.py -r /home/nam4021/project/genomic2.bed -i /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam -o /athena/angsd/scratch/nam4021/reads/"$trimmed"_body_coverage.out
+    fi
+fi
+
+done
+
+
+echo 'Finished'
+```
+
+7. MultiQC
+
+Using the below command, I brought together all the QC results together into multiqc_report_04_03_2023.html. 
+
+I'm also unsure why my original bash script creates read_distribution.out files for the LOW conditions, but they are actually empty out files.
+```
+(multiqc) [nam4021@buddy reads]$ pwd
+/athena/angsd/scratch/nam4021/reads
+(multiqc) [nam4021@buddy reads]$ ls
+HIGH_NAFLD1_body_coverage.out.geneBodyCoverage.curves.pdf  HIGH_NAFLD4_body_coverage.out.geneBodyCoverage.txt
+HIGH_NAFLD1_body_coverage.out.geneBodyCoverage.r           HIGH_NAFLD4_read_distribution.out
+HIGH_NAFLD1_body_coverage.out.geneBodyCoverage.txt         LOW_NAFLD1_body_coverage.out.geneBodyCoverage.txt
+HIGH_NAFLD1_read_distribution.out                          LOW_NAFLD1_read_distribution.out
+HIGH_NAFLD2_body_coverage.out.geneBodyCoverage.txt         LOW_NAFLD2_body_coverage.out.geneBodyCoverage.txt
+HIGH_NAFLD2_read_distribution.out                          LOW_NAFLD2_read_distribution.out
+HIGH_NAFLD3_body_coverage.out.geneBodyCoverage.curves.pdf  LOW_NAFLD3_body_coverage.out.geneBodyCoverage.txt
+HIGH_NAFLD3_body_coverage.out.geneBodyCoverage.r           LOW_NAFLD3_read_distribution.out
+HIGH_NAFLD3_body_coverage.out.geneBodyCoverage.txt         LOW_NAFLD4_body_coverage.out.geneBodyCoverage.txt
+HIGH_NAFLD3_read_distribution.out                          LOW_NAFLD4_read_distribution.out
+```
+
+```
+mamba activate multiqc
+multiqc /athena/angsd/scratch/nam4021/fastqc_NAFLD /athena/angsd/scratch/nam4021/star_NAFLD /athena/angsd/scratch/nam4021/reads -o /athena/angsd/scratch/nam4021/QCout 
+```
+
+The FASTQC looks pretty good! The per base sequence content failed due to the first 11-15 bases for each file, which is common for RNA-seq data. Sequence duplication failed as well, but even after de-duplication there were many different sequences found to be duplicated. However, other quality measures showed good quality. Adapter content was very low in the untrimmed fastq file and nothing changed with the trimmed fastqc except for the sequence length distribution changing slightly in my previous analysis (checking the first file from the previous assignment). Therefore, I didn't find the need to use the trimmed.
+The quality looks good for genome coverage, chromosome read density and other statistics, but the Mapping Quality histogram shows only around 55-60% of reads in the 248+ quality reads.
+
+In order to run RSEQC, I took my original gff file, and converted it to a gene pred file using gff3ToGenePred package by UCSC, and then used the GenePredtoBed to convert the genepred file to a bed file. I was unfamiliar with making a conda environment and which default conda environment these would be added to, so I decided to do this in my local machine.
+
+Then, I copied this file into my project folder in aphrodite, and used rseqc geneBody_coverage and read_distribution on these files.
+```
+(base) [nam4021@buddy GCF_000001405.40]$ cp genomic.gff /home/nam4021/project
+
+(base) Johns-MBP:~ johnmorris$ conda install -c bioconda ucsc-gff3togenepred
+(base) Johns-MBP:Exercises_6 johnmorris$ gff3ToGenePred genomic.gff genomic
+(base) Johns-MBP:Exercises_6 johnmorris$ conda install -c bioconda ucsc-genepredtobed
+(base) Johns-MBP:Exercises_6 johnmorris$ conda install -c bioconda ucsc-genepredtobed
+(base) Johns-MBP:Exercises_6 johnmorris$ genepredtobed genomic genomic2.bed
+(base) Johns-MBP:Exercises_6 johnmorris$ scp /Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Exercises_6/genomic2.bed nam4021@aphrodite.med.cornell.edu://home/nam4021/project
+```
+
+For the basic alignment QC, I ran the below commands.
+```
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat HIGH_NAFLD1Aligned.sortedByCoord.out.bam 
+164314386 + 0 in total (QC-passed reads + QC-failed reads)
+131535322 + 0 primary
+32779064 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+164314386 + 0 mapped (100.00% : N/A)
+131535322 + 0 primary mapped (100.00% : N/A)
+131535322 + 0 paired in sequencing
+65767661 + 0 read1
+65767661 + 0 read2
+131535322 + 0 properly paired (100.00% : N/A)
+131535322 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat HIGH_NAFLD2Aligned.sortedByCoord.out.bam 
+123334824 + 0 in total (QC-passed reads + QC-failed reads)
+101016752 + 0 primary
+22318072 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+123334824 + 0 mapped (100.00% : N/A)
+101016752 + 0 primary mapped (100.00% : N/A)
+101016752 + 0 paired in sequencing
+50508376 + 0 read1
+50508376 + 0 read2
+101016752 + 0 properly paired (100.00% : N/A)
+101016752 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat HIGH_NAFLD3Aligned.sortedByCoord.out.bam 
+125216540 + 0 in total (QC-passed reads + QC-failed reads)
+104052616 + 0 primary
+21163924 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+125216540 + 0 mapped (100.00% : N/A)
+104052616 + 0 primary mapped (100.00% : N/A)
+104052616 + 0 paired in sequencing
+52026308 + 0 read1
+52026308 + 0 read2
+104052616 + 0 properly paired (100.00% : N/A)
+104052616 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat HIGH_NAFLD4Aligned.sortedByCoord.out.bam 
+139899310 + 0 in total (QC-passed reads + QC-failed reads)
+105565702 + 0 primary
+34333608 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+139899310 + 0 mapped (100.00% : N/A)
+105565702 + 0 primary mapped (100.00% : N/A)
+105565702 + 0 paired in sequencing
+52782851 + 0 read1
+52782851 + 0 read2
+105565702 + 0 properly paired (100.00% : N/A)
+105565702 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat LOW_NAFLD1Aligned.sortedByCoord.out.bam 
+118733936 + 0 in total (QC-passed reads + QC-failed reads)
+97770092 + 0 primary
+20963844 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+118733936 + 0 mapped (100.00% : N/A)
+97770092 + 0 primary mapped (100.00% : N/A)
+97770092 + 0 paired in sequencing
+48885046 + 0 read1
+48885046 + 0 read2
+97770092 + 0 properly paired (100.00% : N/A)
+97770092 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat LOW_NAFLD2Aligned.sortedByCoord.out.bam 
+134677736 + 0 in total (QC-passed reads + QC-failed reads)
+110673362 + 0 primary
+24004374 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+134677736 + 0 mapped (100.00% : N/A)
+110673362 + 0 primary mapped (100.00% : N/A)
+110673362 + 0 paired in sequencing
+55336681 + 0 read1
+55336681 + 0 read2
+110673362 + 0 properly paired (100.00% : N/A)
+110673362 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat LOW_NAFLD3Aligned.sortedByCoord.out.bam 
+121912290 + 0 in total (QC-passed reads + QC-failed reads)
+101095978 + 0 primary
+20816312 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+121912290 + 0 mapped (100.00% : N/A)
+101095978 + 0 primary mapped (100.00% : N/A)
+101095978 + 0 paired in sequencing
+50547989 + 0 read1
+50547989 + 0 read2
+101095978 + 0 properly paired (100.00% : N/A)
+101095978 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+
+(angsd) [nam4021@buddy star_NAFLD]$ samtools flagstat LOW_NAFLD4Aligned.sortedByCoord.out.bam 
+131560010 + 0 in total (QC-passed reads + QC-failed reads)
+109421558 + 0 primary
+22138452 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+131560010 + 0 mapped (100.00% : N/A)
+109421558 + 0 primary mapped (100.00% : N/A)
+109421558 + 0 paired in sequencing
+54710779 + 0 read1
+54710779 + 0 read2
+109421558 + 0 properly paired (100.00% : N/A)
+109421558 + 0 with itself and mate mapped
+0 + 0 singletons (0.00% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+```
+The alignment looks like it worked well! All of the reads passed the QC test for the total number of reads, the number of mapped reads and the mapping rate. There were no reads mapped as singletons, mapped to different chromosomes or mapped to the same chromosome but on different strands.
+
+8. Read Counts
+
+Finally, I ran the below script, called feature_counts.sh, in order to get the feature counts from all of the corresponding bam files.
+```
+#!/bin/bash -l
+
+#SBATCH --partition=angsd_class
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --job-name="feature_counts"
+#SBATCH --time=24:00:00 # HH/MM/SS
+#SBATCH --mem=8G # memory requested, units available: K,M,G,T
+#SBATCH --mail-user=nam4021@med.cornell.edu
+#SBATCH --mail-type=ALL
+#SBATCH --requeue
+
+mamba activate angsd
+
+featureCounts -p --countReadPairs -g gene -a /home/nam4021/project/genomic.gff -o /athena/angsd/scratch/nam4021/gene_counts_NAFLD /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD1Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD2Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD3Aligned.sortedByCoord.out.bam  /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD4Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD1Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD2Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD3Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
+```
+
+Then I used scp to transfer the output from on the scratch directory to my local computer.
+
+In the next Rmd and html files, called Read_counts_NAFLD.rmd and .html, I proceed to take this output and input it into R!

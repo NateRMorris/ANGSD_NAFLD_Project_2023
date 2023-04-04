@@ -1,0 +1,294 @@
+---
+title: "Read Counts"
+output: html_document
+date: "2023-04-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Reading in featureCounts results
+
+```{r}
+# Read in the data
+folder <- "/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/gene_counts_NAFLD" # download count table! ## reading in featureCounts output
+readcounts <- read.table(t(folder), header = TRUE)
+#read_counts_transform <- t(readcounts)
+```
+
+NOTE: One issue I had when running the feature_counts function, was the extremely low % of Successfully assigned alignments, which showed around 2% for each value.
+This can be found my looking at '''cat /home/nam4021/project/project_org/slurm-10633599.out'''. I don't believe this is a normal amount.
+
+
+```{r}
+# Change the rownames to easily readable condition/replicate names
+original_names <- names(readcounts)
+
+names(readcounts) <- c(names(readcounts)[1:6],
+  "HIGH_1", "HIGH_2", "HIGH_3", "HIGH_4", "LOW_1",
+  "LOW_2", "LOW_3", "LOW_4")
+
+str(readcounts)
+```
+
+2. DESeq2 object set up and organization
+
+```{r}
+#BiocManager::install("DESeq2")
+library(DESeq2)
+
+row.names(readcounts) <- make.names(readcounts$Geneid)
+
+# Eliminate unnecessary rows
+
+readcounts <- readcounts[ , -c(1:6)]
+
+head(readcounts)
+```
+```{r}
+## Create sample_info
+sample_info <- data.frame(condition = gsub("[0-9]+", "", names(readcounts)),
+                         row.names = names(readcounts) )
+sample_info
+str(sample_info)
+```
+
+```{r}
+# Create the DESeq object
+DESeq.ds <- DESeqDataSetFromMatrix(countData = as.matrix(readcounts),
+                                   colData = sample_info,
+                                   design = ~ condition)
+DESeq.ds
+head(counts(DESeq.ds))
+```
+```{r}
+# Check the sums of the reads for each condition
+colSums(counts(DESeq.ds))
+
+barplot(colSums(counts(DESeq.ds)), main = "Total Counts", ylab = "Counts #", xlab = "Condition", las = 2)
+```
+
+```{r}
+# Original dimensions with empty genes
+dim(DESeq.ds)
+```
+
+```{r}
+library(magrittr)
+# Eliminate rows with empty genes
+keep_genes <- rowSums(counts(DESeq.ds)) > 0
+DESeq.ds <- DESeq.ds[ keep_genes, ]
+dim(DESeq.ds)
+counts(DESeq.ds) %>% str
+assay(DESeq.ds) %>% str
+```
+
+3. Normalizing for sequence depth and RNA composition differences
+
+```{r}
+ DESeq.ds <- estimateSizeFactors(DESeq.ds) # calculate SFs, add them to object 
+plot( sizeFactors(DESeq.ds), colSums(counts(DESeq.ds)), # assess them
+      ylab = "library sizes", xlab = "size factors", cex = .6 )
+```
+```{r}
+## setting up the plotting layout
+par(mfrow=c(1,2))
+## extracting normalized counts
+counts.sf_normalized <- counts(DESeq.ds, normalized=TRUE)
+## adding the boxplots
+boxplot(counts(DESeq.ds), main = "read counts only", cex = .6)
+boxplot(counts.sf_normalized, main = "SF normalized", cex = .6)
+```
+```{r}
+# Transform the normalized read counts to bring them onto similar scales
+
+par(mfrow=c(1,2)) # to plot the two box plots next to each other
+## bp of non-normalized
+boxplot(log2(counts(DESeq.ds) +1), notch=TRUE,
+        main = "Non-normalized read counts",
+        ylab ="log2(read counts)", cex = .6, las = 2)
+## bp of size-factor normalized values
+boxplot(log2(counts(DESeq.ds, normalized=TRUE) +1), notch=TRUE,
+        main = "Size-factor-normalized read counts",
+        ylab ="log2(read counts)", cex = .6, las = 2)
+```
+
+a. Understanding more properties of read count data
+
+```{r}
+## Make a scatterplot of log normalized counts against each other to see how well the values correlate within a condition per sample and gene. Here we focus on two samples.
+
+## non-normalized read counts plus pseudocount
+log.counts <- log2(counts(DESeq.ds, normalized = FALSE) + 1)
+## instead of creating a new object, we could assign the values to a distinct matrix ## within the DESeq.ds object
+assay(DESeq.ds, "log.counts") <- log2(counts(DESeq.ds, normalized = FALSE) + 1)
+## normalized read counts
+assay(DESeq.ds, "log.norm.counts") <- log2(counts(DESeq.ds, normalized=TRUE) + 1)
+par(mfrow=c(1,2))
+DESeq.ds[, c("HIGH_1","HIGH_2")] %>%
+  assay(.,  "log.norm.counts") %>%
+  plot(., cex=.1, main = "HIGH_1 vs. HIGH_2")
+DESeq.ds[, c("LOW_1","LOW_2")] %>%
+  assay(.,  "log.norm.counts") %>%
+  plot(., cex=.1, main = "LOW_1 vs LOW_2")
+```
+As shown in the practical, the points should primarily only fan out at the lower levels, since they should correlate less well when they are low. However, for the HIGH condition, they don't correlate very well when they are high. For the LOW condition, they seem to correlate better.
+
+```{r}
+#BiocManager::install("vsn")
+library(vsn)
+library(ggplot2)
+## generate the base meanSdPlot using sequencing depth normalized log2(read counts) ## set up plotting frame
+par(mfrow=c(1,1))
+## generate the plot
+msd_plot <- vsn::meanSdPlot(assay(DESeq.ds, "log.norm.counts"), ranks=FALSE, # show the data on the original scale
+plot = FALSE)
+## since vsn::meanSdPlot generates a ggplot2 object, this can be manipulated in the usual ways
+msd_plot$gg +
+  ggtitle("Sequencing depth normalized log2(read counts)") +
+  ylab("standard deviation")
+```
+This depicts that there is a variance-mean dependence with low read counts, or else the red line would be horizontal. The data shows signs of heteroskedasticity!
+
+b. Reducing the dependence of the variance on the mean
+
+```{r}
+## this actually generates a different type of object!
+DESeq.rlog <- rlog(DESeq.ds, blind = TRUE)
+## set blind = FALSE if the conditions are expected to introduce ## strong differences in a large proportion of the genes
+## (blind means blind to the experimental design)
+par(mfrow=c(1,2))
+plot(assay(DESeq.ds, "log.norm.counts")[,1:2], cex=.1,
+     main = "size factor and log2-transformed")
+## the rlog-transformed counts are stored in the "assay" accessor
+plot(assay(DESeq.rlog)[,1:2],
+     cex=.1, main = "rlog transformed",
+     xlab = colnames(assay(DESeq.rlog[,1])),
+     ylab = colnames(assay(DESeq.rlog[,2])) )
+```
+The rlog transformed plot seems to show lesser variance across all of the read counts.
+```{r}
+rlog.norm.counts <- assay(DESeq.rlog)
+```
+
+Now, we have expression values that have been adjusted for:
+• differences in sequencing depth; 
+• differences in RNA composition; 
+• heteroskedasticity;
+• large dynamic range.
+
+```{r}
+## rlog-transformed read counts
+msd_plot <- vsn::meanSdPlot(assay(DESeq.rlog), ranks=FALSE, plot = FALSE)
+msd_plot$gg + ggtitle("Following rlog transformation") +
+  coord_cartesian(ylim = c(0,3))
+```
+
+Looks a lot better!
+
+Save for future uses:
+
+```{r}
+save.image(file = "NAFLD_BulkRNA.RData")
+```
+
+4. Running the Differential Gene Expression Analysis
+
+```{r}
+library(magrittr)
+library(DESeq2)
+
+FILE_DSD="/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/NAFLD_BulkRNA.RData"
+load(FILE_DSD)
+DESeq.ds
+DESeq.ds$condition
+design(DESeq.ds)
+
+```
+
+````{r}
+DESeq.ds %<>% DESeq()
+
+# The above line is equivalent to:
+# normalize for diffs in sequencing depth and abundance per sample
+# DESeq.ds %<>% estimateSizeFactors()
+# gene-wise dispersion estimates across all samples
+# DESeq.ds %<>% estimateDispersions()
+# fit a neg. binomial GLM and compute Wald stat for each gene 
+# DESeq.ds %<>% nbinomWaldTest()
+
+# Now the DESeq object has additional entries in the rowdata column
+DESeq.ds
+
+```
+
+```{r}
+rowData(DESeq.ds) %>% colnames
+```
+
+5. Adjusting for multiple hypothesis testing with independent filtering
+```{r}
+ rowData(DESeq.ds)$WaldPvalue_condition_LOW__vs_HIGH_ %>%
+    hist(breaks=19, main="Raw p-values for LOW vs HIGH")
+```
+```{r}
+DGE.results <- results(DESeq.ds, independentFiltering = TRUE, alpha = 0.05)
+# the first line will tell you which comparison was done to achieve the log2FC 
+head(DGE.results)
+summary(DGE.results)
+```
+```{r}
+DGE.results$padj %>%
+    hist(breaks=19, main="Adjusted p-values for SNF2 vs WT")
+```
+```{r}
+DGE.results.sorted <- DGE.results %>% `[`(order(.$padj),)
+head(DGE.results.sorted)
+```
+
+By looking at the first 6 genes that have the lowest padj values, we can see what these genes correlate to and if the analysis makes sense.
+
+The below make some sense:
+RAB7B is a GTPase that plays a role in the transport and degradation of proteins in endosomes and lysosomes in mammalian cells. 
+CD52 is associated with the metabolism of proteins pathway and post-transcriptional modification. However, it seems to play a major role in T-cell/immunological function.
+
+However, I haven't been able to find any relation with the below:
+WNT4 promotes female sex development and repressess male development. Perhaps this is skewed/bias by the samples I chose?
+AKIRIN1 is involved in skeletal muscle development.
+PDZK1IP1 is a protein coding gene associated with spinal muscular atrophy and supreglottis neoplasm.
+GPR88 is a brain orphan G protein couple receptor, and aids in the striatum development (brain section for motor and reward systems).
+
+
+ARPC5 is shown in some literature to have a larger affect. And it seems consistent with this study. ARPC5 encodes one of the subunits of the human Arp2/3 protein complex, which plays a large role in the regulation of the actin cytoskeleton.
+
+```{r}
+par(mfrow=c(1,2))
+plotCounts(DESeq.ds, gene="ARPC5", normalized = TRUE, xlab="")
+plotCounts(DESeq.ds, gene = which.max(DGE.results$padj), xlab="",
+           main = "Gene with max. p.adj.\n(=least significant)")
+```
+
+Unfortunately, by plotting the MA, you can see that there aren't really many strongly differentiated genes.
+
+```{r}
+plotMA(DGE.results, alpha=0.05,
+      main="Test: p.adj.value < 0.05", ylim = c(-4,4))
+```
+
+```{r}
+#BiocManager::install("EnhancedVolcano")
+library(EnhancedVolcano)
+vp1 <- EnhancedVolcano(DGE.results,
+                       lab=rownames(DGE.results),
+                      x='log2FoldChange', y='padj',
+                      pCutoff=0.05,
+                      title="HIGH / LOW")
+print(vp1)
+```
+Perhaps I need to set the baseline to the LOW condition and the experimental to the HIGH condition?
+
+Here is my attempt at a PCA. However, it seems to categorize them not by gene, but my the conditional group. Therefore, it shows which group is most responsible for each of the outcomes.
+```{r}
+pca_data <- plotPCA(rlog(DESeq.ds), intgroup="condition", returnData=TRUE)
+```
