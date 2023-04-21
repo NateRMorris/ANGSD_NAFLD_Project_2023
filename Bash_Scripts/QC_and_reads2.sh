@@ -1,16 +1,16 @@
 #!/bin/bash -l
 
 #SBATCH --partition=angsd_class
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
+#SBATCH --nodes=4
+#SBATCH --ntasks=8
 #SBATCH --job-name="qc_reads"
 #SBATCH --time=24:00:00 # HH/MM/SS
-#SBATCH --mem=24G # memory requested, units available: K,M,G,T
+#SBATCH --mem=36G # memory requested, units available: K,M,G,T
 #SBATCH --mail-user=nam4021@med.cornell.edu
 #SBATCH --mail-type=ALL
 #SBATCH --requeue
 
-# mamba activate rseqc
+mamba activate rseqc
 
 #fastqc SRR9036307_1.fastq.gz --extract --outdir /home/nam4021/project/fastqc
 
@@ -41,7 +41,7 @@ do
             echo "$forfour does not exist"
 
             # Issue - not sure why my BAMQC outputs to the /athena/angsd/scratch/nam4021/star_NAFLD/ directory and not the specified QCout
-            /softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
+            #/softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
         
             read_distribution.py -i /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam -r /home/nam4021/project/genomic2.bed > /athena/angsd/scratch/nam4021/reads/LOW_NAFLD4_read_distribution.out
 
@@ -57,7 +57,7 @@ else
         echo "$trimmed does not exist"
 
 
-        /softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam
+        #/softlib/apps/EL7/BamQC/bin/bamqc [-o /athena/angsd/scratch/nam4021/QCout] [-g /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40] /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam
 
         read_distribution.py -i /athena/angsd/scratch/nam4021/star_NAFLD/"$trimmed"Aligned.sortedByCoord.out.bam -r /home/nam4021/project/genomic2.bed > /athena/angsd/scratch/nam4021/reads/"$trimmed"_read_distribution.out
 

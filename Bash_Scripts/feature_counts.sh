@@ -10,6 +10,18 @@
 #SBATCH --mail-type=ALL
 #SBATCH --requeue
 
-# mamba activate angsd
+mamba activate angsd
 
-featureCounts -p --countReadPairs -g gene -a /home/nam4021/project/genomic.gff -o /athena/angsd/scratch/nam4021/gene_counts_NAFLD /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD1Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD2Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD3Aligned.sortedByCoord.out.bam  /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD4Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD1Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD2Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD3Aligned.sortedByCoord.out.bam /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
+featureCounts -p --countReadPairs -s 2 \
+                -g gene -a /home/nam4021/project/ncbi_dataset/data/GCF_000001405.40/genomic.gff \
+                -o /athena/angsd/scratch/nam4021/gene_counts_NAFLD_gene_reverse_stranded \
+                /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD1Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD2Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD3Aligned.sortedByCoord.out.bam  \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/HIGH_NAFLD4Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD1Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD2Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD3Aligned.sortedByCoord.out.bam \
+                 /athena/angsd/scratch/nam4021/star_NAFLD/LOW_NAFLD4Aligned.sortedByCoord.out.bam
+
+                 # Things I can add: --tmpDir   --minOverlap    -t exon (this is default)

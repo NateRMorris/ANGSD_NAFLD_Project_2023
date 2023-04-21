@@ -1,0 +1,2 @@
+load("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/ANGSD_NAFLD_Project_2023/R_Reports_and_Analysis/NAFLD_BulkRNA.RData")
+load("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/NAFLD_BulkRNA.RData")

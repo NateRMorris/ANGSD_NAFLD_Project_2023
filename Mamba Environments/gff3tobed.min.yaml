@@ -1,0 +1,7 @@
+name: gff3tobed
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bedops
+prefix: /pbtech_mounts/homes064/nam4021/mambaforge/envs/gff3tobed

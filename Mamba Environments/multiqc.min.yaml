@@ -1,0 +1,8 @@
+name: multiqc
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - multiqc=1.14
+prefix: /athena/angsd/scratch/mef3005/share/envs/multiqc

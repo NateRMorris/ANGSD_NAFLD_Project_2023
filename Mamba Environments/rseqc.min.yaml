@@ -1,0 +1,12 @@
+name: rseqc
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - r-base=4.2
+  - bx-python=0.9
+  - pybigwig=0.3
+  - pysam=0.20
+  - rseqc=5.0.1
+prefix: /athena/angsd/scratch/mef3005/share/envs/rseqc
