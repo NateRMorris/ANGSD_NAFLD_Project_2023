@@ -434,8 +434,6 @@ done
 echo 'Finished'
 ```
 
-For additional QC, 
-
 7. MultiQC
 
 Using the below command, I brought together all the QC results together into multiqc_report_04_03_2023.html. 
@@ -444,10 +442,15 @@ mamba activate multiqc
 multiqc /athena/angsd/scratch/nam4021/fastqc_NAFLD /athena/angsd/scratch/nam4021/star_NAFLD /athena/angsd/scratch/nam4021/reads -o /athena/angsd/scratch/nam4021/QCout 
 ```
 
-The FASTQC looks pretty good! The per base sequence content failed due to the first 11-15 bases for each file, which is common for RNA-seq data. Sequence duplication failed as well, but even after de-duplication there were many different sequences found to be duplicated. However, other quality measures showed good quality. Adapter content was very low in the untrimmed fastq file and nothing changed with the trimmed fastqc except for the sequence length distribution changing slightly in my previous analysis (checking the first file from the previous assignment). Therefore, I didn't find the need to use the trimmed.
+The FASTQC looks pretty good! The per base sequence content failed due to the first 11-15 bases for each file, which is common for RNA-seq data. 
+
+Overall, the 1st replicated (Sequence duplication failed as well, but even after de-duplication there were many different sequences found to be duplicated. However, other quality measures showed good quality. Adapter content was very low in the untrimmed fastq file and nothing changed with the trimmed fastqc except for the sequence length distribution changing slightly in my previous analysis. Therefore, I didn't find the need to use the trimmed.
+
+I don't see evidence to support adapter/primer or any other contamination. There is significantly higher overrepresented sequences in the _1 stranded fastq files, compared to the _2 for each sample, however it is not very high. GC distribution looks good. 
 
 The quality looks good for genome coverage, chromosome read density and other statistics, but the Mapping Quality histogram shows only around 55-60% of reads in the 248+ quality reads.
 
+The RSeQC shows that most of the captured RNAs are exonic and there is not a pronounced 3'/5' bias (no prominent RNA degradation). 
 
 For the basic alignment QC, I ran the below commands.
 ```
@@ -601,7 +604,7 @@ The alignment looks like it worked well! All of the reads passed the QC test for
 
 Finally, I ran the below script, called feature_counts.sh, in order to get the feature counts from all of the corresponding bam files.
 
-For this, there were multiple necessary input parameters to successfully count the features. -s 2 was necessary since the fasta/bam files were reverse stranded. -g gene was necessary to 
+For this, there were multiple necessary input parameters to successfully count the features. -s 2 was necessary since the fasta/bam files were reverse stranded. -g gene was necessary to specify the feature (gene for gff3 files). -p --countReadPairs tells the program that it is paired end data. -a specifies the annotation file. -F is default as GTF, which is compatible with gff for featureCounts and -t exon is also the default value. I decided to not include -O for overlaps or anything for multimapping. -f isn't necessary either.
 ```
 #!/bin/bash -l
 
@@ -649,7 +652,7 @@ trim-galore              /athena/angsd/scratch/mef3005/share/envs/trim-galore
 base                     /pbtech_mounts/homes064/nam4021/mambaforge
 gff3tobed             *  /pbtech_mounts/homes064/nam4021/mambaforge/envs/gff3tobed
 ```
-I created the yml min and full lists using the below commands. Replacing venv with each of the conda environments above
+I created the yml min and full lists using the below commands. Replacing venv with each of the conda environments above.
 ```
 mamba env export -n venv --from-history > /home/nam4021/project/project_org/mamba_env/venv.min.yaml
 mamba env export -n venv > /home/nam4021/project/project_org/mamba_env/venv.full.yaml

@@ -10,14 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Methods Continued - Differential Gene Expression Analysis
 
-1. Reading in featureCounts results
-
-```{r}
-# Read in the data
-folder <- "/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/gene_counts_NAFLD_gene_reverse_stranded" # download count table! ## reading in featureCounts output
-readcounts <- read.table(t(folder), header = TRUE)
-```
-
+1. Read in the featureCounts summary and graph
 
 ```{r}
 ## For Feature Counts Summary Graph
@@ -37,20 +30,27 @@ long_new <- melt(setDT(transposed_second_new), id.vars = c("Status"))
 long_new$value <- as.numeric(long_new$value)
 ggplot(data = long_new, aes(x=Status, y = value, fill = variable) ) + geom_bar(stat="identity", position='dodge') + ylab("# reads") + xlab("samples") + coord_flip()
 ```
-As you can see, the feature/read count distribution shows many samples assigned to no features and to multimapping. This is due to the fact that I decided to not assign any of the features that have multimapping (or map to multiple places on the genome), and our GFF file contains many features. I initial thought was the more features would lead to more assigned features, however this isn't always the case.
+As you can see, the feature/read count distribution shows many samples assigned to no features and to multimapping. This is due to the fact that I decided to not assign multi-mapped features (reads that are multiple places on the genome), and our GFF file contains many features. I initially thought was the more features would lead to more assigned features, however this isn't always the case.
 
+2. Reading in featureCounts results
 
 ```{r}
-# Change the rownames to easily readable condition/replicate names
-original_names <- names(readcounts)
+# Read in the data
+folder <- "/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/gene_counts_NAFLD_gene_reverse_stranded" # download count table! ## reading in featureCounts output
+readcounts <- read.table(t(folder), header = TRUE)
+```
 
+3. Changing the rownames to represent the conditions and replicate names
+
+```{r}
+original_names <- names(readcounts)
 names(readcounts) <- c(names(readcounts)[1:6],
   "HIGH_1", "HIGH_2", "HIGH_3", "HIGH_4", "LOW_1",
   "LOW_2", "LOW_3", "LOW_4")
 #str(readcounts)
 ```
 
-2. DESeq2 object set up and organization
+4. DESeq2 object set up and readcounts assay organization
 
 ```{r}
 #BiocManager::install("DESeq2")
@@ -60,14 +60,10 @@ row.names(readcounts) <- make.names(readcounts$Geneid)
 # Eliminate unnecessary rows
 readcounts <- readcounts[ , -c(1:6)]
 head(readcounts)
-```
 
-```{r}
 ## Create sample_info
 sample_info <- data.frame(condition = gsub("[0-9]+", "", names(readcounts)),
                          row.names = names(readcounts) )
-sample_info
-#str(sample_info)
 
 # Create the DESeq object
 DESeq.ds <- DESeqDataSetFromMatrix(countData = as.matrix(readcounts),
@@ -80,25 +76,29 @@ head(counts(DESeq.ds))
 colSums(counts(DESeq.ds))
 barplot(colSums(counts(DESeq.ds)), main = "Total Counts", ylab = "Counts #", xlab = "Condition", las = 2)
 ```
+The sum of each replicate and condition matches the total counts we see from the summary featureCounts table, as well as in the QC.
+
 
 ```{r}
 # Original dimensions with empty genes
+paste0("The original dimensions of the object including empty genes is: ")
 dim(DESeq.ds)
 ```
 
 ```{r}
-# Eliminate rows with empty genes
+# Pre-filtering low count genes before running DESeq2 functions
 library(magrittr)
 keep_genes <- rowSums(counts(DESeq.ds)) > 0
 DESeq.ds <- DESeq.ds[ keep_genes, ]
+paste0("The original dimensions of the object excluding empty genes is: ")
 dim(DESeq.ds)
-counts(DESeq.ds) %>% str
-assay(DESeq.ds) %>% str
+#counts(DESeq.ds) %>% str
+#assay(DESeq.ds) %>% str
 ```
 
-3. Normalizing for sequence depth and RNA composition differences
+5. Normalizing for sequence depth and RNA composition differences
 
-Raw read counts are strongly influenced by the actual expression level, as well as the gene length, transcript sequence (%GC), sequence depth, the expression of all the other genes in the same sample and which method we chose to deal with multimapped reads.
+Raw read counts are strongly influenced by the actual expression level, but they are also impacted by the gene length, transcript sequence (%GC), sequence depth, the expression of all the other genes in the same sample and which method we chose to deal with multimapped reads. Here, we can normalize the samples to minimize the impact of these effects.
 
 ```{r}
 # Calculate the size factors and add them to the object
@@ -109,19 +109,20 @@ plot(sizeFactors(DESeq.ds), colSums(counts(DESeq.ds)),
 ```
 
 ```{r}
-# Setting up the plotting layout
-par(mfrow=c(1,2))
 # Extracting normalized counts
 counts.sf_normalized <- counts(DESeq.ds, normalized=TRUE)
-# Creating the boxplots
+# Creating the boxplots to compare normalized vs non-normalized reads
+par(mfrow=c(1,2))
 boxplot(counts(DESeq.ds), main = "read counts only", cex = .6)
 boxplot(counts.sf_normalized, main = "SF normalized", cex = .6)
 ```
+In the above, we can check whether the normalization helped adjust global differences between samples. However, due to the different scales, it is hard to compare. Below, we can see them with similar scales.
+
 ```{r}
 # Transform the normalized read counts to bring them onto similar scales
 
-par(mfrow=c(1,2)) # to plot the two box plots next to each other
 # Boxplot of non-normalized
+par(mfrow=c(1,2))
 boxplot(log2(counts(DESeq.ds) +1), notch=TRUE,
         main = "Non-normalized read counts",
         ylab ="log2(read counts)", cex = .6, las = 2)
@@ -130,6 +131,7 @@ boxplot(log2(counts(DESeq.ds, normalized=TRUE) +1), notch=TRUE,
         main = "Size-factor-normalized read counts",
         ylab ="log2(read counts)", cex = .6, las = 2)
 ```
+As you can see, across the replicates, the size factor normalization of the read counts worked well.
 
 a. Understanding more properties of read count data
 
@@ -150,25 +152,29 @@ DESeq.ds[, c("LOW_1","LOW_2")] %>%
   assay(.,  "log.norm.counts") %>%
   plot(., cex=.1, main = "LOW_1 vs LOW_2")
 ```
-As shown in the practical, the points should primarily only fan out at the lower levels, since they should correlate less well when they are low. However, for the HIGH condition, they don't correlate very well when they are high. For the LOW condition, they seem to correlate better.
+These plots comparing the log normalized counts for each gene between each sample and replicate should primarily only fan out at the lower levels, since they should correlate less well at lower expression, and come together at higher levels, since they should correlate more when the values increase. This indicates that the standard deviation of expression levels depends on the mean. However, for the HIGH condition, they don't correlate very well when they are high. For the LOW condition, they seem to correlate better.
 
-```{r}
+```{r, }
 #BiocManager::install("vsn")
 library(vsn)
 library(ggplot2)
-## generate the base meanSdPlot using sequencing depth normalized log2(read counts) ## set up plotting frame
-par(mfrow=c(1,1))
-## generate the plot
+```
+
+```{r}
+# Generate the base meanSdPlot using sequencing depth normalized log2(read counts)
+par(mfrow=c(1,1)) # Setting up the plotting frame
+# Generate the plot
 msd_plot <- vsn::meanSdPlot(assay(DESeq.ds, "log.norm.counts"), ranks=FALSE, # show the data on the original scale
 plot = FALSE)
-## since vsn::meanSdPlot generates a ggplot2 object, this can be manipulated in the usual ways
 msd_plot$gg +
   ggtitle("Sequencing depth normalized log2(read counts)") +
   ylab("standard deviation")
 ```
-This depicts that there is a variance-mean dependence with low read counts, or else the red line would be horizontal. The data shows signs of heteroskedasticity!
+This depicts that there is a variance-mean dependence with low read counts, or else the red line would be horizontal. The data shows signs of heteroskedasticity (or a non-normal distribution of variances)!
 
 b. Reducing the dependence of the variance on the mean
+
+Rlog is the regularized log function. This transforms the count data to a log2 scale, which minimizes the differences between samples for rows with small counts, and normalized with respect to library size. This is the optimized method for RNA-seq. 
 
 ```{r}
 ## this actually generates a different type of object!
@@ -220,7 +226,9 @@ FILE_DSD="/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/
 load(FILE_DSD)
 DESeq.ds
 DESeq.ds$condition
+DESeq.ds$condition <- relevel(DESeq.ds$condition, ref = "LOW_") #Relevel to set the reference level to low
 design(DESeq.ds)
+# We also have DESeq.rlog
 
 ```
 
@@ -241,8 +249,10 @@ rowData(DESeq.ds) %>% colnames
 ```
 
 5. Adjusting for multiple hypothesis testing with independent filtering
+
+As we can see, the raw p-values allow for genes that have very low read counts. This can affect our p-values, since gene with low read counts can be too unreliable and variable, and therefore have very large p-values. It is important to remove them before the multiple testing adjustments. The results() function of DESeq2 will try to find the optimal expression cut-off to maximize the number of genes that pass the adjusted p-value threshold. For genes with low reads, p-adj will be filled with NA.
 ```{r}
- rowData(DESeq.ds)$WaldPvalue_condition_LOW__vs_HIGH_ %>%
+ rowData(DESeq.ds)$WaldPvalue_condition_HIGH__vs_LOW_ %>%
     hist(breaks=19, main="Raw p-values for LOW vs HIGH")
 ```
 ```{r}
@@ -253,7 +263,7 @@ summary(DGE.results)
 ```
 ```{r}
 DGE.results$padj %>%
-    hist(breaks=19, main="Adjusted p-values for SNF2 vs WT")
+    hist(breaks=19, main="Adjusted p-values for HIGH vs LOW")
 ```
 ```{r}
 DGE.results.sorted <- DGE.results %>% `[`(order(.$padj),)
@@ -309,9 +319,118 @@ library(ggplot2)
 plotPCA(rlog(DESeq.ds), intgroup="condition")
 ```
 
+```{r}
+# BiocManager::install("pheatmap")
+library(pheatmap)
+# identify genes with the desired adjusted p-value cut-off
+DGEgenes <- rownames(subset(DGE.results.sorted, padj < 0.05)) # extract rlog-transformed values into a matrix
+rlog.dge <- DESeq.rlog[DGEgenes,] %>% assay
+# heatmap of DEG sorted by p.adjust
+pheatmap(rlog.dge, scale="none",
+         show_rownames=FALSE, main="DGE (no scaling)",
+         color=colorRampPalette(RColorBrewer::brewer.pal(n=7, name="Reds"))(100)
+)
+pheatmap(rlog.dge, scale="row",
+         show_rownames=FALSE, main="DGE (row-based z-score)")
+```
+
+
 
 # Running GO or cluster profiler
 ```{r}
-load("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/ANGSD_NAFLD_Project_2023/Datasets/NAFLD_BulkRNA.RData")
-dim(NAFLD_BulkRNA)
+library(magrittr)
+library(dplyr)
+#load("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/ANGSD_NAFLD_Project_2023/Datasets/NAFLD_BulkRNA.RData")
+# Constructing a named vector of 0 (= not DE) and 1 (= DEG) 
+DGE.genes <- rownames(subset(DGE.results.sorted, padj < 0.05))
+gene.vector <- row.names(DGE.results.sorted) %in% DGE.genes %>% as.integer
+names(gene.vector) <- row.names(DGE.results.sorted)
+```
+
+```{r}
+library(goseq)
+#BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+#library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+#BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
+pwf <- nullp(gene.vector, "hg19", "knownGene")
+```
+
+```{r}
+# Using ClusterProfiler for GSEA 
+#BiocManager::install("clusterProfiler")
+library(clusterProfiler)
+#BiocManager::install("org.Hs.eg.db")
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+
+Gff2GeneTable("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/genomic.gff", compress = TRUE)
+```
+
+```{r}
+enricher(gene.vector, pvalueCutoff = 0.05, pAdjustMethod = "bonferroni", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, TERM2GENE)
+download_KEGG(hg38, keggType = "KEGG", keyType = "kegg")
+
+# FOR KEGG ENRICHMENT
+# https://www.genome.jp/kegg/catalog/org_list.html
+# Convert SYMBOLS in gene.vector to ENTREZIDs - 4.01% failed to map
+# Shows that ENTREZIDs are not allowed within enrichKEGG function - https://www.biostars.org/p/204939/
+entrez_ids <- bitr(names(which(gene.vector ==1)), fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db") 
+
+# Use mapIds to convert the SYMBOLs where gene.vector == 1 (where ()) to UNIPROT
+uniprot_ids_1 <- mapIds(org.Hs.eg.db, keys = names(which(gene.vector == 1)), column = "UNIPROT", keytype = "SYMBOL")
+
+# Use the enrichKEGG to find the KEGG pathways where the uniprot genes are 
+kegg_enrichment <- enrichKEGG(gene = uniprot_ids_1, organism = "hsa", keyType = "uniprot")
+
+# view the top 10 enriched pathways
+head(kegg_enrichment@result$Description, n = 10)
+#head(kegg_enrichment@result, n = 10)
+
+
+# FOR GO_ENRICHMENT
+BP_go_enrichment <- enrichGO(gene = names(which(gene.vector ==1)), 
+                          'org.Hs.eg.db', 
+                          keyType = "SYMBOL", # ENTREZ ID NOT SUPPORTED
+                          ont = "BP", 
+                          pvalueCutoff = 0.01, 
+                          qvalueCutoff = 0.05)
+
+head(BP_go_enrichment@result$Description, n = 10)
+
+MF_go_enrichment <- enrichGO(gene = names(which(gene.vector ==1)), 
+                          'org.Hs.eg.db', 
+                          keyType = "SYMBOL", # ENTREZ ID NOT SUPPORTED
+                          ont = "MF", 
+                          pvalueCutoff = 0.01, 
+                          qvalueCutoff = 0.05)
+
+head(MF_go_enrichment@result$Description, n = 10)
+
+CC_go_enrichment <- enrichGO(gene = names(which(gene.vector ==1)), 
+                          'org.Hs.eg.db', 
+                          keyType = "SYMBOL", # ENTREZ ID NOT SUPPORTED
+                          ont = "CC", 
+                          pvalueCutoff = 0.01, 
+                          qvalueCutoff = 0.05)
+
+head(CC_go_enrichment@result$Description, n = 10)
+
+GSEA(names(which(gene.vector == 1)))
+```
+
+```{r}
+# Other Links
+# ClusterProfiler - https://www.rdocumentation.org/packages/clusterProfiler/versions/3.0.4
+# ClusterProfiler - http://bioconductor.org/packages/release/bioc/manuals/clusterProfiler/man/clusterProfiler.pdf
+# USCS hg38 knowngene package - https://bioconductor.org/packages/release/data/annotation/manuals/TxDb.Hsapiens.UCSC.hg38.knownGene/man/TxDb.Hsapiens.UCSC.hg38.knownGene.pdf
+# org.HS.eg.db - https://www.bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
+
+# Go-seq - https://bioconductor.org/packages/devel/bioc/manuals/goseq/man/goseq.pdf
+
+# https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.40/ - Genome Assembly
+
+# https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html - Annotation HUB
+
 ```

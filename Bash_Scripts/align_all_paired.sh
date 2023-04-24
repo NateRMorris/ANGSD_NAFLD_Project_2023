@@ -10,6 +10,8 @@
 #SBATCH --mail-type=ALL
 #SBATCH --requeue
 
+mamba activate angsd
+
 echo 'Starting STAR alignment now'
 
 # Define the path to the CSV file
@@ -62,7 +64,7 @@ else
      --readFilesIn /home/nam4021/project/project_org/fastqfiles/$trimmed_1.fastq.gz /home/nam4021/project/project_org/fastqfiles/$trimmed_2.fastq.gz \
      --outFileNamePrefix /athena/angsd/scratch/nam4021/star_NAFLD/$trimmed \
      --outSAMtype BAM SortedByCoordinate
-     #--alignIntronMin 31  --alignIntronMax 3000 https://genome.ucsc.edu/cgi-bin/hgTablesLinks to an external site.
+     #--alignIntronMin 10  --alignIntronMax 1200000 https://genome.ucsc.edu/cgi-bin/hgTables to an external site.
      # -- outTmpDir /localScratch
 fi
 
