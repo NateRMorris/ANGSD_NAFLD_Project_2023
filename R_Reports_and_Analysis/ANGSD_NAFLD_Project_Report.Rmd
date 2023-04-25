@@ -1,9 +1,10 @@
 ---
-title: "ANGSD_NAFLD_Project_Nathan_Morris"
+title: "ANGSD_NAFLD_Gene_Expression_Project"
+author: "Nathan Morris"
+date: "2023-04-25"
 output: 
   html_document:
     toc: true
-date: "2023-03-29"
 ---
 
 ```{r setup, include=FALSE}
@@ -374,15 +375,13 @@ mamba activate multiqc
 multiqc /athena/angsd/scratch/nam4021/fastqc_NAFLD /athena/angsd/scratch/nam4021/star_NAFLD /athena/angsd/scratch/nam4021/reads -o /athena/angsd/scratch/nam4021/QCout 
 ```
 
-The FASTQC looks pretty good! The per base sequence content failed due to the first 11-15 bases for each file, which is common for RNA-seq data. 
+The FASTQC looks pretty good! The per base sequence content failed due to the first 11-15 bases for each file, which is common for RNA-seq data. Ther
 
-Overall, the 1st replicated (Sequence duplication failed as well, but even after de-duplication there were many different sequences found to be duplicated. However, other quality measures showed good quality. Adapter content was very low in the untrimmed fastq file and nothing changed with the trimmed fastqc except for the sequence length distribution changing slightly in my previous analysis. Therefore, I didn't find the need to use the trimmed.
+Overall, the 1st replicate in each sample Sequence duplication failed as well, but even after de-duplication there were many different sequences found to be duplicated. However, other quality measures showed good quality. Adapter content was very low in the untrimmed fastq file and nothing changed with the trimmed fastqc except for the sequence length distribution changing slightly in my previous analysis. Therefore, I didn't find the need to use the trimmed.
 
-I don't see evidence to support adapter/primer or any other contamination. There is significantly higher overrepresented sequences in the _1 stranded fastq files, compared to the _2 for each sample, however it is not concerningly high. GC distribution looks good. 
+I don't see evidence to support adapter/primer or any other contamination. There is significantly higher overrepresented sequences in the _1 stranded fastq files, compared to the _2 for each sample, however it is not concerningly high. GC distribution, sequence length distribution (51 bp+), per base N content and quality scores looks good.! The quality looks good for genome coverage, chromosome read density and other statistics, but the Mapping Quality histogram shows only around 55-60% of reads in the 248+ quality reads.
 
-The quality looks good for genome coverage, chromosome read density and other statistics, but the Mapping Quality histogram shows only around 55-60% of reads in the 248+ quality reads.
-
-The RSeQC shows that most of the captured RNAs are exonic and there is not a pronounced 3'/5' bias (no prominent RNA degradation). 
+The RSeQC shows that most of the captured RNAs are exonic (although there are a high amount of intronic reads) and there is not a pronounced 3'/5' bias (no prominent RNA degradation in gene body coverage).
 
 ### 8. Basic Alignment QC
 For the basic alignment QC, I ran the below commands.
@@ -827,7 +826,7 @@ design(DESeq.ds)
 
 ```
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 DESeq.ds %<>% DESeq()
 
 # The above line is equivalent to:
@@ -997,7 +996,6 @@ write.table(DGE_table,
     file = "NAFLD_DGE_Table.txt",
     quote = FALSE, row.names = TRUE, col.names = TRUE)
 ```
-subset(DGE.results.sorted, padj < 0.05 & abs(log2FoldChange) >= 1.0 )
 
 ```{r,warning=FALSE,message=FALSE}
 # Using ClusterProfiler for GSEA 
@@ -1054,6 +1052,8 @@ CC_go_enrichment <- enrichGO(gene = names(which(gene.vector ==1)),
 
 head(CC_go_enrichment@result$Description, n = 10)
 ```
+
+For this enrichment, I left the default pvalueCutoffs and qvalueCutoffs. I also decided the cut off for DGE genes would be a p-adjusted value of 0.05 and a log2FoldChange to be 1.0.
 
 #### Create GO table
 
