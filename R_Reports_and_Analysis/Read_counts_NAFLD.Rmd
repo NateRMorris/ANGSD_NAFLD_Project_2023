@@ -38,6 +38,7 @@ As you can see, the feature/read count distribution shows many samples assigned 
 # Read in the data
 folder <- "/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/gene_counts_NAFLD_gene_reverse_stranded" # download count table! ## reading in featureCounts output
 readcounts <- read.table(t(folder), header = TRUE)
+length(rownames(readcounts)) # Here you can see that we have a total of 49306 genes
 ```
 
 3. Changing the rownames to represent the conditions and replicate names
@@ -116,7 +117,7 @@ par(mfrow=c(1,2))
 boxplot(counts(DESeq.ds), main = "read counts only", cex = .6)
 boxplot(counts.sf_normalized, main = "SF normalized", cex = .6)
 ```
-In the above, we can check whether the normalization helped adjust global differences between samples. However, due to the different scales, it is hard to compare. Below, we can see them with similar scales.
+In the above, we can check whether the normalization helped adjust global differences between samples. However, due to the different scales, it is hard to compare. Below, we can see them with similar scales by log2 transforming the counts.
 
 ```{r}
 # Transform the normalized read counts to bring them onto similar scales
@@ -174,16 +175,15 @@ This depicts that there is a variance-mean dependence with low read counts, or e
 
 b. Reducing the dependence of the variance on the mean
 
-Rlog is the regularized log function. This transforms the count data to a log2 scale, which minimizes the differences between samples for rows with small counts, and normalized with respect to library size. This is the optimized method for RNA-seq. 
+Rlog is the regularized log function. This shrinks the count data to a log2 scale, which minimizes the differences between samples for rows with small counts, and normalizes with respect to library size. Therefore, this allows us to base the variability of the genes on the overall average expression between all genes since it assumes that all genes that share similar average expression values should also display similar noise levels. This is the optimized method for RNA-seq. 
 
 ```{r}
-## this actually generates a different type of object!
 DESeq.rlog <- rlog(DESeq.ds, blind = TRUE)
-## set blind = FALSE if the conditions are expected to introduce ## strong differences in a large proportion of the genes
-## (blind means blind to the experimental design)
+# Blind is set to TRUE because we want our results to be blind to the experimental design. This is because our null hypothesis is expecting there to not be any difference in the genes between the two conditions
 par(mfrow=c(1,2))
 plot(assay(DESeq.ds, "log.norm.counts")[,1:2], cex=.1,
      main = "size factor and log2-transformed")
+
 ## the rlog-transformed counts are stored in the "assay" accessor
 plot(assay(DESeq.rlog)[,1:2],
      cex=.1, main = "rlog transformed",
@@ -191,6 +191,8 @@ plot(assay(DESeq.rlog)[,1:2],
      ylab = colnames(assay(DESeq.rlog[,2])) )
 ```
 The rlog transformed plot seems to show lesser variance across all of the read counts.
+
+We can set our rlog, normalized counts as the DESeq rlog assay.
 ```{r}
 rlog.norm.counts <- assay(DESeq.rlog)
 ```
@@ -250,55 +252,58 @@ rowData(DESeq.ds) %>% colnames
 
 5. Adjusting for multiple hypothesis testing with independent filtering
 
-As we can see, the raw p-values allow for genes that have very low read counts. This can affect our p-values, since gene with low read counts can be too unreliable and variable, and therefore have very large p-values. It is important to remove them before the multiple testing adjustments. The results() function of DESeq2 will try to find the optimal expression cut-off to maximize the number of genes that pass the adjusted p-value threshold. For genes with low reads, p-adj will be filled with NA.
+When performing a large number of tests, p-values have a higher probability of representing a false positive outcome rather than a true positive outcome. For this reason, it is important to adjust the p-values, called multiple testing correction.
+
+Before multiple testing correction, it is important to ignore genes with low read counts as we can't make assessments on their gene expression because the counts can be too unreliable and variable. The results() function of DESeq2 will try to find the optimal expression cut-off to maximize the number of genes that pass the adjusted p-value threshold. For genes with low reads, p-adj will be filled with NA.
+
 ```{r}
  rowData(DESeq.ds)$WaldPvalue_condition_HIGH__vs_LOW_ %>%
     hist(breaks=19, main="Raw p-values for LOW vs HIGH")
 ```
+
 ```{r}
 DGE.results <- results(DESeq.ds, independentFiltering = TRUE, alpha = 0.05)
-# the first line will tell you which comparison was done to achieve the log2FC 
+# Set independent filtering as true to apply the results function and ignore genes with low expression levels (NA p-adj value)
 head(DGE.results)
 summary(DGE.results)
+table(DGE.results$padj < 0.05)
 ```
+
+6. Assessing the DE results
+
 ```{r}
 DGE.results$padj %>%
     hist(breaks=19, main="Adjusted p-values for HIGH vs LOW")
 ```
+The results from the adjust p-values to indicate that there are 1897 genes that have values less than 0.05, as shown in the table previously. However, as you can see, there is also a high frequency of genes at other p-adj values. 
+
 ```{r}
 DGE.results.sorted <- DGE.results %>% `[`(order(.$padj),)
 head(DGE.results.sorted)
 ```
+By looking at the first 6 genes that have the lowest p-adj values, we can see what these genes correlate to and if the analysis makes sense.
 
-By looking at the first 6 genes that have the lowest padj values, we can see what these genes correlate to and if the analysis makes sense.
+GPX2 encodes for a protein in the glutathione peroxidase family. It helps catalyze the reduction of organic hydroperoxides and hydrogen peroxide. It is present in the gastrointestinal tract and liver in humans. Overexpression of this gene is associated with increased differentiation and proliferation in gastrointestinal cancer (https://www.genecards.org/cgi-bin/carddisp.pl?gene=GPX2). It is relates to the fatty acid metabolism and glutathione conjugation pathways.
 
-The below make some sense:
-RAB7B is a GTPase that plays a role in the transport and degradation of proteins in endosomes and lysosomes in mammalian cells. 
-CD52 is associated with the metabolism of proteins pathway and post-transcriptional modification. However, it seems to play a major role in T-cell/immunological function.
+AKR1B10 is a member of the aldo-keto reductase family and encodes for a protein that catalyzes the NADPH-dependent reduction of a wide variety of carbonyl-containing compounds. It is involved in the cyclophosphamide pathway/pharmacodynamics (https://www.genecards.org/cgi-bin/carddisp.pl?gene=AKR1B10) and may play an important role in liver carcinogenesis.
 
-However, I haven't been able to find any relation with the below:
-WNT4 promotes female sex development and repressess male development. Perhaps this is skewed/bias by the samples I chose?
-AKIRIN1 is involved in skeletal muscle development.
-PDZK1IP1 is a protein coding gene associated with spinal muscular atrophy and supreglottis neoplasm.
-GPR88 is a brain orphan G protein couple receptor, and aids in the striatum development (brain section for motor and reward systems).
+LOC124909347 and LINC01322 are associated with the non-coding RNA class. As you can see, the baseMean or expression value is considerably lower than the first two genes (https://www.genecards.org/cgi-bin/carddisp.pl?gene=LOC124909347, https://www.genecards.org/cgi-bin/carddisp.pl?gene=LINC01322).
 
+PROZ encodes for a liver vitamin K-dependent glycoprotein that plays a role in regulating blood coagulation (https://www.genecards.org/cgi-bin/carddisp.pl?gene=PROZ).
+
+LDL encodes for lipoprotein lipase, a key enzyme in triglyceride metabolism. Mutations are linked to many disorders of lipoprotein metabolism (https://www.genecards.org/cgi-bin/carddisp.pl?gene=LPL).
 
 ARPC5 is shown in some literature to have a larger affect. And it seems consistent with this study. ARPC5 encodes one of the subunits of the human Arp2/3 protein complex, which plays a large role in the regulation of the actin cytoskeleton.
 
 ```{r}
 par(mfrow=c(1,2))
-#plotCounts(DESeq.ds, gene="ARPC5", normalized = TRUE, xlab="")
-plotCounts(DESeq.ds, gene="GPX2", normalized = TRUE, xlab="")
+plotCounts(DESeq.ds, gene="TES", normalized = TRUE, xlab="")
+#plotCounts(DESeq.ds, gene="GPX2", normalized = TRUE, xlab="")
 plotCounts(DESeq.ds, gene = which.max(DGE.results$padj), xlab="",
            main = "Gene with max. p.adj.\n(=least significant)")
 ```
 
-Unfortunately, by plotting the MA, you can see that there aren't really many strongly differentiated genes.
-
-```{r}
-plotMA(DGE.results, alpha=0.05,
-      main="Test: p.adj.value < 0.05", ylim = c(-8,8))
-```
+Volcano Plot
 
 ```{r}
 #BiocManager::install("EnhancedVolcano")
@@ -310,30 +315,40 @@ vp1 <- EnhancedVolcano(DGE.results,
                       title="HIGH / LOW")
 print(vp1)
 ```
-Perhaps I need to set the baseline to the LOW condition and the experimental to the HIGH condition?
+The volcano plot allows you to see the 
 
-Here is my attempt at a PCA. However, it seems to categorize them not by gene, but by the conditional group. Therefore, it shows which group is most responsible for each of the outcomes.
+
+MA Plot
+```{r}
+plotMA(DGE.results, alpha=0.05,
+      main="Test: p.adj.value < 0.05", ylim = c(-8,8))
+```
+In the MA plot, each point represents a single gene, and the x axis shows the mean normalized counts for that gene, and the y axis represents the log fold change of that gene. Genes that are passing the significance threshold (the adjusted p-value is < 0.05 for this experiment) are colored in blue. As you can see, the differentially expressed genes aincrease as you increase the expression. Although, there is higher log fold change of genes at lower expression levels.
+
+PCA Plot
 ```{r}
 library(ggplot2)
 #pca_data <- plotPCA(rlog(DESeq.ds), intgroup="condition", returnData=TRUE)
-plotPCA(rlog(DESeq.ds), intgroup="condition")
+plotPCA(rlog(DESeq.ds), intgroup="condition") + geom_text(aes(label = colnames(DESeq.ds)), size = 3, hjust = 0, vjust = 0)
 ```
+The PCA plot shows the reduces dimensionality of the dataset, while preserving the majority of the variation in the data. PC1 accounts for 47% of the variance in the dataset, and based on this, the LOW and the HIGH groups seem generally separated, however they are not totally distinct. LOW_3 and HIGH_3 seem to be overlapping in PC1, but separated heavily in PC2. In PC2, HIGH_2 is somewhat of an outlier, as it doesn't group with the other HIGH condition samples. There isn't drastic differences in these groups, and the clustering in the PCA isn't very promising. However, this could be due primarily to the variability of the disease.
 
+Heatmap of DEG sorted by the adjusted p-values.
 ```{r}
 # BiocManager::install("pheatmap")
 library(pheatmap)
-# identify genes with the desired adjusted p-value cut-off
+# identify genes with the desired adjusted p-value cut-off of 0.05
 DGEgenes <- rownames(subset(DGE.results.sorted, padj < 0.05)) # extract rlog-transformed values into a matrix
 rlog.dge <- DESeq.rlog[DGEgenes,] %>% assay
-# heatmap of DEG sorted by p.adjust
-pheatmap(rlog.dge, scale="none",
-         show_rownames=FALSE, main="DGE (no scaling)",
-         color=colorRampPalette(RColorBrewer::brewer.pal(n=7, name="Reds"))(100)
-)
+# Heatmap of DEG sorted by p.adjust
+#pheatmap(rlog.dge, scale="none",
+#         show_rownames=FALSE, main="DGE (no scaling)",
+#         color=colorRampPalette(RColorBrewer::brewer.pal(n=7, name="Reds"))(100)
+#)
 pheatmap(rlog.dge, scale="row",
          show_rownames=FALSE, main="DGE (row-based z-score)")
 ```
-
+This heat map can be used to visualize the distribution and relative intensity of the z-scores for each gene for each replicate within each condition. The z-score tells us how many standard deviations the particular point is from the mean of the dataset. Here, each row represents a gene in each sample, and it's z-score. The trend shown here is that the top portion of the genes are down-regulated, and therefore have negative z-scores and are lower expression than the mean, for the HIGH condition samples, they are up-regulated for the LOW condition samples. The opposite can be said for the bottom portion of the genes. Based on this information, HIGH_2 seems to express some genes considerably more or less than the replicates. HIGH_3 seems to not express as much as the other samples within it's condition are. I believe the variability of the disease can cause these variations, but perhaps if we had more data, we could exclude certain samples as outliers.
 
 
 # Running GO or cluster profiler
@@ -343,18 +358,13 @@ library(dplyr)
 #load("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/ANGSD_NAFLD_Project_2023/Datasets/NAFLD_BulkRNA.RData")
 # Constructing a named vector of 0 (= not DE) and 1 (= DEG) 
 DGE.genes <- rownames(subset(DGE.results.sorted, padj < 0.05))
+#DGE.genes <- rownames(subset(DGE.results.sorted, padj < 0.05 & abs(log2FoldChange) >= 1.5 ))
 gene.vector <- row.names(DGE.results.sorted) %in% DGE.genes %>% as.integer
 names(gene.vector) <- row.names(DGE.results.sorted)
-```
 
-```{r}
-library(goseq)
-#BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
-#library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-#BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
-library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-library(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
-pwf <- nullp(gene.vector, "hg19", "knownGene")
+# Confirming that there are 1897 genes that are differential expressed:
+length(which(DGE.results$padj < 0.05))
+length(which(gene.vector ==1))
 ```
 
 ```{r}
@@ -363,14 +373,14 @@ pwf <- nullp(gene.vector, "hg19", "knownGene")
 library(clusterProfiler)
 #BiocManager::install("org.Hs.eg.db")
 library(org.Hs.eg.db)
+##BiocManager::install("AnnotationDbi")
 library(AnnotationDbi)
-
-Gff2GeneTable("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/genomic.gff", compress = TRUE)
-```
-
-```{r}
-enricher(gene.vector, pvalueCutoff = 0.05, pAdjustMethod = "bonferroni", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, TERM2GENE)
-download_KEGG(hg38, keggType = "KEGG", keyType = "kegg")
+#BiocManager::install("TxDb.Hsapiens.UCSC.hg38.knownGene")
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+#BiocManager::install("TxDb.Hsapiens.UCSC.hg19.knownGene")
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+#enricher(gene.vector, pvalueCutoff = 0.05, pAdjustMethod = "bonferroni", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, TERM2GENE)
+#download_KEGG(hg38, keggType = "KEGG", keyType = "kegg")
 
 # FOR KEGG ENRICHMENT
 # https://www.genome.jp/kegg/catalog/org_list.html
@@ -416,21 +426,34 @@ CC_go_enrichment <- enrichGO(gene = names(which(gene.vector ==1)),
                           qvalueCutoff = 0.05)
 
 head(CC_go_enrichment@result$Description, n = 10)
-
-GSEA(names(which(gene.vector == 1)))
 ```
 
 ```{r}
-# Other Links
-# ClusterProfiler - https://www.rdocumentation.org/packages/clusterProfiler/versions/3.0.4
-# ClusterProfiler - http://bioconductor.org/packages/release/bioc/manuals/clusterProfiler/man/clusterProfiler.pdf
-# USCS hg38 knowngene package - https://bioconductor.org/packages/release/data/annotation/manuals/TxDb.Hsapiens.UCSC.hg38.knownGene/man/TxDb.Hsapiens.UCSC.hg38.knownGene.pdf
-# org.HS.eg.db - https://www.bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html
+# Hypothesis:
+# Immune cell infiltration in NAFLD
+'TES' %in% names(gene.vector)
+which(names(gene.vector) == "TES")
+'CEBPD' %in% names(gene.vector)
+which(names(gene.vector) == "CEBPD")
+'H4C11' %in% names(gene.vector)
+which(names(gene.vector) == "H4C11")
+'CEBPB' %in% names(gene.vector)
+which(names(gene.vector) == "CEPBP")
+'GATA3' %in% names(gene.vector)
+which(names(gene.vector) == "GATA3")
+'KLF4' %in% names(gene.vector)
+which(names(gene.vector) == "KLF4")
 
-# Go-seq - https://bioconductor.org/packages/devel/bioc/manuals/goseq/man/goseq.pdf
+# Redox reactions - Metabolic function
+'ALDH2' %in% names(gene.vector)
+which(names(gene.vector) == "ALDH2")
+'ALDH8A1' %in% names(gene.vector)
+which(names(gene.vector) == "ALDH8A1")
+```
 
-# https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.40/ - Genome Assembly
 
-# https://bioconductor.org/packages/release/bioc/html/AnnotationHub.html - Annotation HUB
 
+
+```{r pressure, echo=FALSE}
+plot(pressure)
 ```
