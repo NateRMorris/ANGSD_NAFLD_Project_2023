@@ -1,10 +1,9 @@
 ---
 title: "ANGSD_NAFLD_Project_Nathan_Morris"
-output: html_document
-date: "2023-03-29"
-output:
+output: 
   html_document:
     toc: true
+date: "2023-03-29"
 ---
 
 ```{r setup, include=FALSE}
@@ -13,29 +12,22 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # I. Introduction
 
-Non-alcoholic fatty liver disease (NAFLD) is a condition characterized by the accumulation of excess fat in the liver, and when the individuals consume little to no alcohol. This is a growing health problem and it is estimated that 100 million individuals in the United States have NAFLD (Rivera, 2022) with annual medical costs of about $103 billion (Younossi et al, 2016). NAFLD is the most common form of liver disease in children and it's prevalence has doubled in the past 20 years. Models predict the occurrence of NAFLD cases to increase 21% by 2030 (Estes et al, 2018). The disease is highly associated with obesity, type 2 diabetes and metabolic syndrome. The more severe form of NAFLD is called nonalcoholic steatohepatitis (NASH), which causes the liver to swell and become damaged. This can lead to liver fibrosis, cirrhosis and even liver cancer.
+Non-alcoholic fatty liver disease (NAFLD) is a condition characterized by the accumulation of excess fat in the liver when the individuals consume little to no alcohol. This is a growing health problem and it is estimated that 100 million individuals in the United States have NAFLD (Rivera, 2022) with annual medical costs of about $103 billion (Younossi et al, 2016). NAFLD is the most common form of liver disease in children and it's prevalence has doubled in the past 20 years. Models predict the occurrence of NAFLD cases to increase 21% by 2030 (Estes et al, 2018). The disease is highly associated with obesity, type 2 diabetes and metabolic syndrome. The more severe forms of NAFLD can lead to liver fibrosis, cirrhosis and even liver cancer. The root cause of NAFLD is not known, but environmental, lifestyle and genetic factors are thought to have an effect. High-fat diet, sedentary behavior and insulin resistance are possible causes, and therefore lifestyle changes such as weight loss, exercise and a healthy diet are ways to prevent and treat NAFLD (Rivera, 2022). NAFLD is primarily diagnosed through blood tests, which can show high levels of liver enzymes, however the severity of the condition is defined by the histological examination of liver biopsies. 
 
-The root cause of NAFLD is not known, but environmental, lifestyle and genetic factors are thought to have an effect. High-fat diet, sedentary behavior and insulin resistance are possible causes, and therefore lifestyle changes such as weight loss, exercise and a healthy diet are ways to prevent and treat NAFLD (Rivera, 2022). NAFLD is primarily diagnosed through blood tests, which can show high levels of liver enzymes, however the severity of the condition is defined by the histology of liver biopsies. 
+Research studies have shown that there are many different pathways responsible for the histological manifestations of the disease activity (such as metabolic, cell stress, death, inflammatory and fibrogenic pathways) (Hoang et al, 2019). Certain studies have found that there is significant down-regulation of genes associated with metabolic processes and significant up-regulation of genes involved in immune responses (Han et al, 2022 and Cao et al, 2023). Immune cell infiltration is an important process that contributes to the development and progression of NAFLD, because the accumulation of fat in the liver leads to inflammation and damage to liver cells, and in response, the immune cells are recruited to remove damaged cells and initiate tissue repair. However, the cytokines released from immune cells can also lead to further liver damage, fibrosis and disease progression (Tilg et al. 2010) leading to metabolic stress, increased reactive oxygen species and increased redox reactions. Therefore, when comparing individuals with severe cases of NAFLD to those with mild cases of NAFLD, I would expect genes CEBPD, H4C11, CEBPB, GATA3 and KLF4 to be upregulated as they are associated with immune cell infiltration in NAFLD and I would also expect upregulation of the genes CAT, ALDH2 and ALDH8A1, which are associated with redox reactions. 
 
-Literature has shown there to be many different pathways responsible for the histological manifestations of the disease activity (such as metabolic, cell stress, death, inflammatory and fibrogenic pathways) (Hoang et al, 2019). However, studies have shown that patients with severe NAFLD had high up-regulation of genes associated with cell adhesion and migration (which can be attributed to THBS2, EFEMP1 and DPT), development and extracellular matrix organization (COL1A2, COL4A1, COL3A1, LUM, FBN1 and DKK3), and regulation of development, transcription and signal transduction (IGFBP7, ID4, EPHA3 and PDGFRA). Other unregulated markers include adult liver progenitor cells, like JAG1, EPCAM, SOX9, PROM1 and SPP1. As determined by IPA, prominent genes were associated with biological functions such as tissue remodeling/regeneration (COL1A2, COL3A1, COL4A1, and LUM), progenitor cells (EPCAM, JAG1, and SOX9), cancer (AQP1, CD24, EFEMP1, PDGFRA, SRPX, and SOX4), and CVD (DCN, LAMA2, THBS2, and BCL2) (Moylan et al. 2014).
-
-Previous research shows that there is significant down-regulation of genes associated with metabolic processes and significant up-regulation of genes involved in immune responses. I would expect CEBPD, H4C11, CEBPB, GATA3 and KLF4 to be up-regulated, as they are associated with immune cell infiltration in NAFLD, and CAT, ALDH2 and ALDH8A1, which are associated with redox reactions. 
-
-- https://www.nature.com/articles/s41591-018-0104-9 - Check here for the literature on the pathways that cause NAFLD
-
-I've selected samples from the paper: Hoang et al 2019, found below. https://link.springer.com/content/pdf/10.1038/s41598-019-48746-5.pdf. HemoShear Therapeutics generated the data. The RNA was extracted from cells using a Qiagen RNeasy RNA isolaion kit, which uses polyA-oligo-dT-based purification of mRNA. Illumina TruSeq Stranded mRNA Sample prep was used on liver biopsy cells from 72 patients covering the full spectrum of non-alcoholic fatty liver disease (NAFLD activity score of 0 to 6, fibrosis stage score of 0 to 4), while 6 histologically normal samples were used as well. Illumina HiSeq 2500 was used to sequence the material.
-
-Here is more detailed information on each sample: https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA542148&o=acc_s%3Aa
 
 # II. Results:
 
+The present study investigated the gene expression patterns in non-alcoholic fatty liver disease (NAFLD). Based on previous research, we hypothesized that genes CEBPD, H4C11, CEBPB, GATA3, and KLF4, which are associated with immune cell infiltration, would be upregulated in NAFLD. Similarly, we hypothesized that the genes CAT, ALDH2, and ALDH8A1, which are associated with redox reactions, would also be upregulated in NAFLD. However, our results showed that these genes were not upregulated when comparing samples from individuals with severe NAFLD compared to low disease level individuals. 
+
+This conclusion is supported by the list of differential genes, as well as the volcano plot, MA plot, and counts plots, where significant differential expression is not clear. The heat map does show some difference in gene expression between the two conditions, however, the difference between the replicates in each condition could be the cause of this seemingly different gene expression.
+
+Our pathway analysis shows us that immune cell infiltration and redox reactions weren't highly differentiated between the two conditions. Nevertheless, it did find certain pathways that are relevant to NAFLD, such as extracellular structure organization (which helps maintain the complex network of proteins and carbohydrates that support cells in tissues and organs), pathways involved in the lumen (affecting the absorption and digestion of nutrients), the AGE-RAGE signaling pathway in diabetic complications, which could correspond to the insulin resistance in NAFLD patients. Further studies are warranted to elucidate the complex mechanisms underlying the involvement of these pathways in NAFLD.
+
 # III. Discussion:
 
-Can talk about how RNAse is extremely active in liver cells.
-Could also say that the biological processess driving the disease phenotype vary with disease severity. Also it could be that infected populations with similar histological patterns and severity of the disease could be caused by different disease drivers.
-Limitation of this study - gene expression levels alone may not predict translation into protein or the functionality of the proteins. 
-Average age of patients where NAFLD high samples were taken - 68.25
-Average age of patients where NAFLD low samples were taken - 61.25
+During the course of the research project, there were several issues or limitations that I had to deal with by adjusting methods and approaches. One issue is that the biological processess driving the disease phenotype vary with disease severity. NAFLD is an umbrella term, meaning it encapsulates a complex disease with many phenotypes. Although samples may have been histologically assessed to be in similar disease states, it is likely that the processes involved in each sample or individual vary. This lack of consistency between samples can also be attributed to the limited availability of tissue samples. Due to the lack of available time to process, I tried my best to choose only four replicate samples for each condition with similar attributes (women over the age of 60), however just basing these replicates on age and sex is not enough. Further information on weight, race and even diet could've helped make each of my replicates more similar and aid in the consistency between samples of the same condition. Also, the high levels of RNase in the liver could have affected the study as well. While this is difficult to control, it most likely has some effect on our samples and could have skewed our gene expression data. Finally, a limitation of the study is that gene expression levels alone may not predict translation into protein or the functionality of the proteins. Gene expression serves as a proxy for a wide range of biological processes and cellular functions, and should be used as a tool to provide insights into the underlying molecular mechanisms of a disease, it should not be taken directly as protein level expression.
 
 # IV. Methods:
 
@@ -43,7 +35,7 @@ Average age of patients where NAFLD low samples were taken - 61.25
 
 For this study, I decided to use samples from Hoang et al 2019. This data was generated by HemoShear Therapeutics and the RNA was extracted from liver biospy cells using a Qiagen RNease RNA isolation kit. This kit uses polyA-oligo-dT based purification of mRNA. cDNA libraries were prepared using the Illumina TruSeq Stranded mRNA Sample Preparation kit. This library prep is stranded, and the data is paired end. All raw data is available through the Gene Expression Omnibus, Accession Number GSE130970.
 
-Samples were separated into groups by two factors, NAS score and fibrosis stage score. The NAFLD disease activity is captured by the NAFLD activity score (NAS), which is the sum of the histological severity scores for steatosis, lobular inflamation and hepatocellular ballooning. The fibrosis stage can be used as a prognosis for the severity of NAFLD and has been shown to predict mortality and time to development of severe liver disease (Taylor et al, 2020 and Angulo et al 2015). Both of these scores were based on histological assessments. In this study, I decided to use 8 patient samples, 4 samples representing each of the two groups: "LOW NAFLD" characterized by normal/low NAS score (NAS scores of 0 and 1 sample with 1) and early fibrosis stage (stage 0), and "HIGH NAFLD" characterized by high NAS score (NAS scores of 5 or 6) and late fibrosis stage (stage 3).
+Samples were separated into groups by two factors, NAS score and fibrosis stage score. The NAFLD disease activity is captured by the NAFLD activity score (NAS), which is the sum of the histological severity scores for steatosis, lobular inflamation and hepatocellular ballooning. The fibrosis stage can be used as a prognosis for the severity of NAFLD and has been shown to predict mortality and time to development of severe liver disease (Taylor et al, 2020 and Angulo et al 2015). Both of these scores were based on histological assessments. In this study, I decided to use 8 patient samples, 4 samples representing each of the two groups: "LOW NAFLD" characterized by normal/low NAS score (NAS scores of 0 and 1 sample with 1) and early fibrosis stage (stage 0), and "HIGH NAFLD" characterized by high NAS score (NAS scores of 5 or 6) and late fibrosis stage (stage 3). The average age of patients where NAFLD high samples were taken was 68.25, while the average age of patients where NAFLD low samples were taken from is 61.25
 
 I've supplied a NAFLD_Sample_Notes sheet, which gives the fibrosis stage and NAFLD scores for each patient's samples.
 More detailed information on each sample can be found here: https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA542148&o=acc_s%3Aa
@@ -69,10 +61,9 @@ SRR9036384_2,
 SRR9036357_1,
 SRR9036357_2,
 ```
+Please keep in mind: For this and future scripts, I decided to removed the sbatch commands that dictate the number of nodes, tasks and memory used for processing.
 
 The below bash script, called Download_fastqs.sh, takes the samples from the sample_sras.csv and downloads the necessary contents. This was the first executed command. 
-
-Please keep in mind: For this and future scripts, I decided to removed the sbatch commands that dictate the number of nodes, tasks and memory used for processing.
 ```
 # Define the path to the CSV file
 csv_file="sample_sras.csv"
@@ -150,7 +141,7 @@ Unfortunately, due to the format of the csv file, I had to rename the LOW_NAFLD4
 
 ### 3. FastQC - Sequence Quality Control
 
-I also made a different script called fastqc_NAFLD.sh. These I manually input for each file, however using a for loop could have been a more proper way to do so. Here, I used 8G in the SBATCH, but no further parameters were needed for fastqc besides the input file, the --extract since the fastq file is gzipped, and the out directory.
+I also made a different script called fastqc_NAFLD.sh. These I manually input for each file, however using a for loop could have been a more proper way to do so. Here, no further parameters were needed for fastqc besides the input file, the --extract since the fastq file is gzipped, and the out directory.
 ```
 mamba activate angsd
 
@@ -180,9 +171,7 @@ I found the necessary Genome sequence (FASTA) and annotation features (GFF) at t
 https://www.ncbi.nlm.nih.gov/data-hub/genome/GCF_000001405.40/
 https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/latest_assembly_versions/GCF_000001405.40_GRCh38.p14/. This gff file was recently updated in February 2022 and is version GRCh38.p14. It is also provided by the NCBI RefSeq. 
 
-In the Hoang et al paper, GRCh37.75 from Ensembl was used, along with Salmon (run in a GC bias-aware mode), and using a TMM normalization method from edgeR. Finally, counts and normalized library sizes were used to transform gene-level counts into log2(CPM) values. My reference, alignment process and normalization methods were different, but I wanted to see if my results would still be consistent with the results from the paper. I also decided to use the genome assembly and annotations I chose due to the recent updates and the high amount of annotation, which later I realized isn't always the best way to annotate data.
-
-Using the annotation and the sequence, I constructed and ran the below script. Unfortunately, I kept receiving the "Exceeded step memory limit at some point" error. Therefore, I had to use 64G and for the indexing to work.
+In the Hoang et al paper, GRCh37.75 from Ensembl was used, along with Salmon (run in a GC bias-aware mode), and using a TMM normalization method from edgeR. Finally, counts and normalized library sizes were used to transform gene-level counts into log2(CPM) values. My reference, alignment process and normalization methods were different, but I wanted to see if my results from these samples would match a similar paper on NAFLD patients. I also decided to use the genome assembly and annotations I chose due to the recent updates and the high amount of annotation, which later I realized isn't always the best way to annotate data.
 
 I chose the following parameters based on --runThreadN 6 and --sjdbOverhang 99. This is so it will run in 6 different threads in parallel, and I've used the 99 overhang because it is the default value. The individual reads are 51 bp, therefore 99 overhand is fine, even though the database will be a bit larger than necessary. I've kept the number of nodes and tasks as the default (=1). Our gff file is still compatible with the --sjdbGTFfile command. This script is named Create_hg38_index.sh.
 ```
@@ -195,9 +184,9 @@ STAR --runThreadN 6 --runMode genomeGenerate --genomeDir /athena/angsd/scratch/n
 echo 'Finished'
 ```
 
-Next, I decided to align these using the align_all_paired.sh file. I've used 2 nodes and 4 tasks in order to run the alignment in parallel with 34G. As described in the script below and due to the formatting of the csv's (as mentioned in the above re-name script), LOW_NAFLD4 had different parsing than the others from the new_names.csv. The runthread is set to 8, so it will run in parallel different threads. I've also used the gunzip readFilesCommand in order to use the fastq.gz files.
+Next, I decided to align these using the align_all_paired.sh file. As described in the script below and due to the formatting of the csv's (as mentioned in the above re-name script), LOW_NAFLD4 had different parsing than the others from the new_names.csv. The runthread is set to 8, so it will run in parallel different threads. I've also used the gunzip readFilesCommand in order to use the fastq.gz files.
 
-I realized after running this alignment, I could've used the genome.ucsc website (https://genome.ucsc.edu/cgi-bin/hgTables) in order to assess the Intron Minimum and input this factor. After selecting the proper genome assembly, .bed output file and selecting to create one BED record per Introns plus 0 bases at each end, I've gotten the introns.bed file included in my github datasets (zipped to maximize the storage efficiency). You can run the below commands to extract the smallest and largest intron values.
+I realized after running this alignment, I could've used the genome.ucsc website (https://genome.ucsc.edu/cgi-bin/hgTables) in order to assess the Intron Minimum and input this factor. After selecting the proper genome assembly, .bed output file and selecting to create one BED record per Introns plus 0 bases at each end, I've supplied the introns.bed file included in my github datasets (zipped to maximize the storage efficiency). You can run the below commands to extract the smallest and largest intron values.
 
 Below gives us the smallest intron values: The results are- 1, 2, 10.
 ```
@@ -280,7 +269,7 @@ echo 'Finished'
 
 ### 5. Samtools BAM File Indexing 
 
-After this, I used the sam_index.sh script in order to index all the bam files. This doesn't take much processing power, so I've only used 1 node, task and 4G. There really isn't any other customization/parameters needed to be changed here. It's important to make sure the bam.bai files and bam files are within the same folder once indexed.
+After this, I used the sam_index.sh script in order to index all the bam files. There really isn't any customization/parameters needed to be changed here. It's important to make sure the bam.bai files and bam files are within the same folder once indexed.
 ```
 mamba activate angsd
 
@@ -596,11 +585,14 @@ scp -r nam4021@aphrodite.med.cornell.edu://home/nam4021/project/project_org/mamb
 
 ### 1. Read in the featureCounts summary and graph
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 ## For Feature Counts Summary Graph
 library(dplyr)
 library(data.table)
 library(ggplot2)
+```
+
+```{r}
 nafld_fc <- read.table("/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/final_project_scripts/gene_counts_NAFLD_gene_reverse_stranded.summary")
 row.names(nafld_fc) <- nafld_fc[,1]
 nafld_fc<- nafld_fc[,-1]
@@ -614,6 +606,7 @@ long_new <- melt(setDT(transposed_second_new), id.vars = c("Status"))
 long_new$value <- as.numeric(long_new$value)
 ggplot(data = long_new, aes(x=Status, y = value, fill = variable) ) + geom_bar(stat="identity", position='dodge') + ylab("# reads") + xlab("samples") + coord_flip()
 ```
+
 As you can see, the feature/read count distribution shows many samples assigned to no features and to multimapping. This is due to the fact that I decided to not assign multi-mapped features (reads that are multiple places on the genome), and our GFF file contains many features. I initially thought was the more features would lead to more assigned features, however this isn't always the case.
 
 ### 2. Reading in featureCounts results
@@ -642,9 +635,12 @@ names(readcounts) <- c(names(readcounts)[1:6],
 
 ### 4. DESeq2 object set up and readcounts assay organization
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 #BiocManager::install("DESeq2")
 library(DESeq2)
+```
+
+```{r}
 row.names(readcounts) <- make.names(readcounts$Geneid)
 
 # Eliminate unnecessary rows
@@ -675,9 +671,12 @@ paste0("The original dimensions of the object including empty genes is: ")
 dim(DESeq.ds)
 ```
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 # Pre-filtering low count genes before running DESeq2 functions
 library(magrittr)
+```
+
+```{r}
 keep_genes <- rowSums(counts(DESeq.ds)) > 0
 DESeq.ds <- DESeq.ds[ keep_genes, ]
 paste0("The original dimensions of the object excluding empty genes is: ")
@@ -706,6 +705,7 @@ par(mfrow=c(1,2))
 boxplot(counts(DESeq.ds), main = "read counts only", cex = .6)
 boxplot(counts.sf_normalized, main = "SF normalized", cex = .6)
 ```
+
 In the above, we can check whether the normalization helped adjust global differences between samples. However, due to the different scales, it is hard to compare. Below, we can see them with similar scales by log2 transforming the counts.
 
 ```{r}
@@ -721,6 +721,7 @@ boxplot(log2(counts(DESeq.ds, normalized=TRUE) +1), notch=TRUE,
         main = "Size-factor-normalized read counts",
         ylab ="log2(read counts)", cex = .6, las = 2)
 ```
+
 As you can see, across the replicates, the size factor normalization of the read counts worked well.
 
 #### a. Understanding more properties of read count data
@@ -742,6 +743,7 @@ DESeq.ds[, c("LOW_1","LOW_2")] %>%
   assay(.,  "log.norm.counts") %>%
   plot(., cex=.1, main = "LOW_1 vs LOW_2")
 ```
+
 These plots comparing the log normalized counts for each gene between each sample and replicate should primarily only fan out at the lower levels, since they should correlate less well at lower expression, and come together at higher levels, since they should correlate more when the values increase. This indicates that the standard deviation of expression levels depends on the mean. However, for the HIGH condition, they don't correlate very well when they are high. For the LOW condition, they seem to correlate better.
 
 ```{r, }
@@ -760,6 +762,7 @@ msd_plot$gg +
   ggtitle("Sequencing depth normalized log2(read counts)") +
   ylab("standard deviation")
 ```
+
 This depicts that there is a variance-mean dependence with low read counts, or else the red line would be horizontal. The data shows signs of heteroskedasticity (or a non-normal distribution of variances)!
 
 #### b. Reducing the dependence of the variance on the mean
@@ -779,6 +782,7 @@ plot(assay(DESeq.rlog)[,1:2],
      xlab = colnames(assay(DESeq.rlog[,1])),
      ylab = colnames(assay(DESeq.rlog[,2])) )
 ```
+
 The rlog transformed plot seems to show lesser variance across all of the read counts.
 
 We can set our rlog, normalized counts as the DESeq rlog assay.
@@ -814,16 +818,16 @@ library(magrittr)
 library(DESeq2)
 
 #FILE_DSD="/Users/johnmorris/Desktop/Comp_Bio_MS_Weill_Cornell/Spring_2023/ANGSD/Project_Download/ANGSD_NAFLD_Project_2023/Datasets/NAFLD_BulkRNA.RData"
-load(FILE_DSD)
-DESeq.ds
-DESeq.ds$condition
+#load(FILE_DSD)
+#DESeq.ds
+#DESeq.ds$condition
 DESeq.ds$condition <- relevel(DESeq.ds$condition, ref = "LOW_") #Relevel to set the reference level to low
 design(DESeq.ds)
 # We also have DESeq.rlog
 
 ```
 
-````{r}
+```{r}
 DESeq.ds %<>% DESeq()
 
 # The above line is equivalent to:
@@ -865,6 +869,7 @@ table(DGE.results$padj < 0.05)
 DGE.results <- lfcShrink(DESeq.ds, coef=2, type="apeglm")
 # Use coefficient 2 because by checking resultsNames(DESeq.ds), we can see the second coefficient (condition_HIGH__vs_LOW_) tells us that the expression of the genes will be based on the conditions present here.
 ```
+
 Shrinkage is necessary to shrink the lowly and noisily expressed genes towards zero. This makes these genes that are possibly skewed less important in our downstream analysis.
 
 ### 7. Assessing the DE results
@@ -873,6 +878,7 @@ Shrinkage is necessary to shrink the lowly and noisily expressed genes towards z
 DGE.results$padj %>%
     hist(breaks=19, main="Adjusted p-values for HIGH vs LOW")
 ```
+
 The results from the adjust p-values to indicate that there are 1897 genes that have values less than 0.05, as shown in the table previously. However, as you can see, there is also a high frequency of genes at other p-adj values. 
 
 ```{r}
@@ -891,15 +897,15 @@ PROZ encodes for a liver vitamin K-dependent glycoprotein that plays a role in r
 
 LDL encodes for lipoprotein lipase, a key enzyme in triglyceride metabolism. Mutations are linked to many disorders of lipoprotein metabolism (https://www.genecards.org/cgi-bin/carddisp.pl?gene=LPL).
 
-ARPC5 is shown in some literature to have a larger affect. And it seems consistent with this study. ARPC5 encodes one of the subunits of the human Arp2/3 protein complex, which plays a large role in the regulation of the actin cytoskeleton.
-
 ```{r}
-par(mfrow=c(1,2))
-plotCounts(DESeq.ds, gene="TES", normalized = TRUE, xlab="")
-#plotCounts(DESeq.ds, gene="GPX2", normalized = TRUE, xlab="")
+par(mfrow=c(1,3))
+plotCounts(DESeq.ds, gene="GPX2", normalized = TRUE, xlab="")
+plotCounts(DESeq.ds, gene="CEBPD", normalized = TRUE, xlab="")
 plotCounts(DESeq.ds, gene = which.max(DGE.results$padj), xlab="",
            main = "Gene with max. p.adj.\n(=least significant)")
 ```
+
+Here we see the normalized counts of three genes between the two conditions. GPX2 is the gene with the min p.adj value, representing the most signifcantly differential expressed gene. CEBPD is a gene we hypothesized would change due to it's involvement in immune cell infiltration, however the results do not show very distinct differential expression between the conditions. The final graph shows the gene with the least significant p-value, therefore showing no difference between the conditions.
 
 #### Volcano Plot
 
@@ -913,13 +919,15 @@ vp1 <- EnhancedVolcano(DGE.results,
                       title="HIGH / LOW")
 print(vp1)
 ```
-The volcano plot allows you to see the 
+
+The volcano plot allows you to see the log2 fold change of the gene expression between the two experimental conditions is plotted on the x-axis, which measures the magnitude of the difference in expression between the two conditions. The -log10 p-value of the statistical test is plotted on the y-axis, representing the statistical significance of the difference in expression. In this plot, we see a lot of genes having large log fold changes, however the significance of the expression of these genes is not very high.
 
 #### MA Plot
 ```{r}
 plotMA(DGE.results, alpha=0.05,
       main="Test: p.adj.value < 0.05", ylim = c(-8,8))
 ```
+
 In the MA plot, each point represents a single gene, and the x axis shows the mean normalized counts for that gene, and the y axis represents the log fold change of that gene. Genes that are passing the significance threshold (the adjusted p-value is < 0.05 for this experiment) are colored in blue. The differentially expressed genes increase as you increase the expression. Although, there is higher log fold change of genes at lower expression levels.
 
 #### PCA Plot
@@ -928,6 +936,7 @@ library(ggplot2)
 #pca_data <- plotPCA(rlog(DESeq.ds), intgroup="condition", returnData=TRUE)
 plotPCA(rlog(DESeq.ds), intgroup="condition") + geom_text(aes(label = colnames(DESeq.ds)), size = 3, hjust = 0, vjust = 0)
 ```
+
 The PCA plot shows the reduces dimensionality of the dataset, while preserving the majority of the variation in the data. PC1 accounts for 47% of the variance in the dataset, and based on this, the LOW and the HIGH groups seem generally separated, however they are not totally distinct. LOW_3 and HIGH_3 seem to be overlapping in PC1, but separated heavily in PC2. In PC2, HIGH_2 is somewhat of an outlier, as it doesn't group with the other HIGH condition samples. There isn't drastic differences in these groups, and the clustering in the PCA isn't very promising. However, this could be due primarily to the variability of the disease.
 
 #### Heatmap of DEG sorted by the adjusted p-values.
@@ -945,6 +954,7 @@ rlog.dge <- DESeq.rlog[DGEgenes,] %>% assay
 pheatmap(rlog.dge, scale="row",
          show_rownames=FALSE, main="DGE (row-based z-score)")
 ```
+
 This heat map can be used to visualize the distribution and relative intensity of the z-scores for each gene for each replicate within each condition. The z-score tells us how many standard deviations the particular point is from the mean of the dataset. Here, each row represents a gene in each sample, and it's z-score. The trend shown here is that the top portion of the genes are down-regulated, and therefore have negative z-scores and are lower expression than the mean, for the HIGH condition samples, they are up-regulated for the LOW condition samples. The opposite can be said for the bottom portion of the genes. Based on this information, HIGH_2 seems to express some genes considerably more or less than the replicates. HIGH_3 seems to not express as much as the other samples within it's condition are. I believe the variability of the disease can cause these variations, but perhaps if we had more data, we could exclude certain samples as outliers.
 
 ### 8. Create DGE results table
@@ -989,7 +999,7 @@ write.table(DGE_table,
 ```
 subset(DGE.results.sorted, padj < 0.05 & abs(log2FoldChange) >= 1.0 )
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 # Using ClusterProfiler for GSEA 
 #BiocManager::install("clusterProfiler")
 #BiocManager::install("org.Hs.eg.db")
@@ -1001,7 +1011,9 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+```
 
+```{r}
 # FOR KEGG ENRICHMENT # https://www.genome.jp/kegg/catalog/org_list.html
 # Convert SYMBOLS in gene.vector to UNIPROT_IDs for enrichKEGG function compatability - 4.01% failed to map
 
@@ -1058,10 +1070,10 @@ head(CC_go_enrichment@result$Description, n = 10)
 ```{r}
 # Hypothesis:
 # Immune cell infiltration genes in NAFLD
-immune_cell_genes <- c("TES", "CEBPD", "H4C11", "CEBPB", "GATA3", "KLF4")
+immune_cell_genes <- c("CEBPD", "H4C11", "CEBPB", "GATA3", "KLF4")
 
 # Redox reactions - Metabolic function genes in NAFLD
-redox_genes <- c("ALDH2", "ALDH8A1")
+redox_genes <- c("CAT", "ALDH2", "ALDH8A1")
 
 print("Are the immune cell infiltration genes expressed differentially?")
 for (i in immune_cell_genes) {
@@ -1084,15 +1096,24 @@ for (i in redox_genes) {
 
 # V. Citations:
 
-1. Estes, C., Razavi, H., Loomba, R., Younossi, Z., & Sanyal, A. J. (2018). Modeling the epidemic of nonalcoholic fatty liver disease demonstrates an exponential increase in burden of disease: Estes et al. Hepatology (Baltimore, Md.), 67(1), 123–133. https://doi.org/10.1002/hep.29466
+1. Angulo, P., Kleiner, D. E., Dam-Larsen, S., Adams, L. A., Bjornsson, E. S., Charatcharoenwitthaya, P., Mills, P. R., Keach, J. C., Lafferty, H. D., Stahler, A., Haflidadottir, S., & Bendtsen, F. (2015). Liver fibrosis, but no other histologic features, is associated with long-term outcomes of patients with nonalcoholic fatty liver disease. Gastroenterology, 149(2), 389-397.e10. https://doi.org/10.1053/j.gastro.2015.04.043
 
-2. Hoang, S. A., Oseini, A., Feaver, R. E., Cole, B. K., Asgharpour, A., Vincent, R., Siddiqui, M., Lawson, M. J., Day, N. C., Taylor, J. M., Wamhoff, B. R., Mirshahi, F., Contos, M. J., Idowu, M., & Sanyal, A. J. (2019). Gene expression predicts histological severity and reveals distinct molecular profiles of nonalcoholic fatty liver disease. Scientific Reports, 9(1), 12541. https://doi.org/10.1038/s41598-019-48746-5
+2. Cao, Y., Du, Y., Jia, W., Ding, J., Yuan, J., Zhang, H., Zhang, X., Tao, K., & Yang, Z. (2023). Identification of biomarkers for the diagnosis of chronic kidney disease (CKD) with non-alcoholic fatty liver disease (NAFLD) by bioinformatics analysis and machine learning. Frontiers in Endocrinology, 14, 1125829. https://doi.org/10.3389/fendo.2023.1125829
 
-3. Moylan, C. A., Pang, H., Dellinger, A., Suzuki, A., Garrett, M. E., Guy, C. D., Murphy, S. K., Ashley-Koch, A. E., Choi, S. S., Michelotti, G. A., Hampton, D. D., Chen, Y., Tillmann, H. L., Hauser, M. A., Abdelmalek, M. F., & Diehl, A. M. (2014). Hepatic gene expression profiles differentiate presymptomatic patients with mild versus severe nonalcoholic fatty liver disease: Hepatology. Hepatology (Baltimore, Md.), 59(2), 471–482. https://doi.org/10.1002/hep.26661
+3. Estes, C., Razavi, H., Loomba, R., Younossi, Z., & Sanyal, A. J. (2018). Modeling the epidemic of nonalcoholic fatty liver disease demonstrates an exponential increase in burden of disease: Estes et al. Hepatology (Baltimore, Md.), 67(1), 123–133. https://doi.org/10.1002/hep.29466
 
-4. Rivera, W. (2022, May 23). Nonalcoholic Fatty Liver Disease (NAFLD). American Liver Foundation. https://liverfoundation.org/liver-diseases/fatty-liver-disease/nonalcoholic-fatty-liver-disease-nafld/
+4. Han, N., He, J., Shi, L., Zhang, M., Zheng, J., & Fan, Y. (2022). Identification of biomarkers in nonalcoholic fatty liver disease: A machine learning method and experimental study. Frontiers in Genetics, 13, 1020899. https://doi.org/10.3389/fgene.2022.1020899
 
-5. Suppli, M. P., Rigbolt, K. T. G., Veidal, S. S., Heebøll, S., Eriksen, P. L., Demant, M., Bagger, J. I., Nielsen, J. C., Oró, D., Thrane, S. W., Lund, A., Strandberg, C., Kønig, M. J., Vilsbøll, T., Vrang, N., Thomsen, K. L., Grønbæk, H., Jelsing, J., Hansen, H. H., & Knop, F. K. (2019). Hepatic transcriptome signatures in patients with varying degrees of nonalcoholic fatty liver disease compared with healthy normal-weight individuals. American Journal of Physiology. Gastrointestinal and Liver Physiology, 316(4), G462–G472. https://doi.org/10.1152/ajpgi.00358.2018
+5. Hoang, S. A., Oseini, A., Feaver, R. E., Cole, B. K., Asgharpour, A., Vincent, R., Siddiqui, M., Lawson, M. J., Day, N. C., Taylor, J. M., Wamhoff, B. R., Mirshahi, F., Contos, M. J., Idowu, M., & Sanyal, A. J. (2019). Gene expression predicts histological severity and reveals distinct molecular profiles of nonalcoholic fatty liver disease. Scientific Reports, 9(1), 12541. https://doi.org/10.1038/s41598-019-48746-5
 
-6. Younossi, Z. M., Blissett, D., Blissett, R., Henry, L., Stepanova, M., Younossi, Y., Racila, A., Hunt, S., & Beckerman, R. (2016). The economic and clinical burden of nonalcoholic fatty liver disease in the United States and Europe. Hepatology (Baltimore, Md.), 64(5), 1577–1586. https://doi.org/10.1002/hep.28785
+6. Moylan, C. A., Pang, H., Dellinger, A., Suzuki, A., Garrett, M. E., Guy, C. D., Murphy, S. K., Ashley-Koch, A. E., Choi, S. S., Michelotti, G. A., Hampton, D. D., Chen, Y., Tillmann, H. L., Hauser, M. A., Abdelmalek, M. F., & Diehl, A. M. (2014). Hepatic gene expression profiles differentiate presymptomatic patients with mild versus severe nonalcoholic fatty liver disease: Hepatology. Hepatology (Baltimore, Md.), 59(2), 471–482. https://doi.org/10.1002/hep.26661
 
+7. Rivera, W. (2022, May 23). Nonalcoholic Fatty Liver Disease (NAFLD). American Liver Foundation. https://liverfoundation.org/liver-diseases/fatty-liver-disease/nonalcoholic-fatty-liver-disease-nafld/
+
+8. Suppli, M. P., Rigbolt, K. T. G., Veidal, S. S., Heebøll, S., Eriksen, P. L., Demant, M., Bagger, J. I., Nielsen, J. C., Oró, D., Thrane, S. W., Lund, A., Strandberg, C., Kønig, M. J., Vilsbøll, T., Vrang, N., Thomsen, K. L., Grønbæk, H., Jelsing, J., Hansen, H. H., & Knop, F. K. (2019). Hepatic transcriptome signatures in patients with varying degrees of nonalcoholic fatty liver disease compared with healthy normal-weight individuals. American Journal of Physiology. Gastrointestinal and Liver Physiology, 316(4), G462–G472. https://doi.org/10.1152/ajpgi.00358.2018
+
+9. Taylor, R. S., Taylor, R. J., Bayliss, S., Hagström, H., Nasr, P., Schattenberg, J. M., Ishigami, M., Toyoda, H., Wai-Sun Wong, V., Peleg, N., Shlomai, A., Sebastiani, G., Seko, Y., Bhala, N., Younossi, Z. M., Anstee, Q. M., McPherson, S., & Newsome, P. N. (2020). Association between fibrosis stage and outcomes of patients with nonalcoholic fatty liver disease: A systematic review and meta-analysis. Gastroenterology, 158(6), 1611-1625.e12. https://doi.org/10.1053/j.gastro.2020.01.043
+
+10. Tilg, H., & Moschen, A. R. (2010). Evolution of inflammation in nonalcoholic fatty liver disease: the multiple parallel hits hypothesis. Hepatology (Baltimore, Md.), 52(5), 1836–1846. https://doi.org/10.1002/hep.24001
+
+11. Younossi, Z. M., Blissett, D., Blissett, R., Henry, L., Stepanova, M., Younossi, Y., Racila, A., Hunt, S., & Beckerman, R. (2016). The economic and clinical burden of nonalcoholic fatty liver disease in the United States and Europe. Hepatology (Baltimore, Md.), 64(5), 1577–1586. https://doi.org/10.1002/hep.28785
